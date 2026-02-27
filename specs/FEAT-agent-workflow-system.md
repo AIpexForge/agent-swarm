@@ -432,11 +432,11 @@ When an agent exhausts its retry limit (3 attempts):
 Agents will be built and tested one at a time:
 
 1. **ONBOARD** — Required first; enables all other agents to operate
-2. **BUILD** — Core value; can be tested with manually-created issues
-3. **TEST** — Validates BUILD output
-4. **REVIEW** — Quality gate
-5. **MERGE** — Completes the loop
-6. **PLAN** — Full automation; builds on all other agents working
+2. **PLAN** — Produces the specs and tasks that drive everything else
+3. **BUILD** — Core value; can be tested with manually-created issues
+4. **TEST** — Validates BUILD output
+5. **REVIEW** — Quality gate
+6. **MERGE** — Completes the loop
 
 ---
 
