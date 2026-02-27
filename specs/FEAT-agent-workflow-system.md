@@ -407,10 +407,43 @@ All times are every 30 minutes, staggered:
 | REVIEW | :30, :00 | 9:30, 10:00, 10:30 |
 | MERGE  | :40, :10 | 9:40, 10:10, 10:40 |
 
-Each invocation:
-1. Runs the agent's `find-work.sh` to identify actionable items
-2. If work found: starts a new agent session per task
-3. If no work: exits cleanly (no token spend beyond the script)
+### Pre-LLM Gating (Zero-Cost Idle)
+
+Each cron invocation runs a lightweight shell script **before any LLM session is created**. This ensures zero token spend when there is no work.
+
+**Flow:**
+
+1. **Cron fires** → executes the agent's `find-work.sh` (pure shell, no LLM — just `gh` CLI calls)
+2. **Script queries GitHub** — e.g., `gh issue list --label ready-for-build --repo AIpexForge/<repo> --json number,title,url`
+3. **No work found** → script exits with code 1 → cron job ends. **Cost: $0** (one GitHub API call)
+4. **Work found** → script exits with code 0, outputs matching issue/PR URLs and metadata to stdout → cron spawns a new agent session, passing the issue/PR context as input to the agent
+
+The agent receives the issue/PR details as its initial prompt context, so it can immediately begin working without spending tokens on discovery.
+
+**Example `find-work.sh` for BUILD:**
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPOS=$(cat "$(dirname "$0")/../../config/repos.yml" | grep -v '^#' | grep -v '^$')
+
+for repo in $REPOS; do
+  issues=$(gh issue list --repo "$repo" --label "ready-for-build" --json number,title,url --limit 1)
+  if [ "$issues" != "[]" ]; then
+    echo "$issues"
+    exit 0
+  fi
+
+  prs=$(gh pr list --repo "$repo" --label "ready-for-build" --json number,title,url --limit 1)
+  if [ "$prs" != "[]" ]; then
+    echo "$prs"
+    exit 0
+  fi
+done
+
+exit 1
+```
 
 ---
 
@@ -432,11 +465,11 @@ When an agent exhausts its retry limit (3 attempts):
 Agents will be built and tested one at a time:
 
 1. **ONBOARD** — Required first; enables all other agents to operate
-2. **BUILD** — Core value; can be tested with manually-created issues
-3. **TEST** — Validates BUILD output
-4. **REVIEW** — Quality gate
-5. **MERGE** — Completes the loop
-6. **PLAN** — Full automation; builds on all other agents working
+2. **PLAN** — Produces the specs and tasks that drive everything else
+3. **BUILD** — Core value; can be tested with manually-created issues
+4. **TEST** — Validates BUILD output
+5. **REVIEW** — Quality gate
+6. **MERGE** — Completes the loop
 
 ---
 
