@@ -31,8 +31,9 @@ Before asking any interview questions:
 1. Check if the target repo is already cloned in `~/.openclaw/workspace/`. If not, clone it.
 2. Read `.agents/commands.yml` for stack info (build_cmd, test_cmd, dev_cmd, port, stack)
 3. Scan codebase structure: directory layout, key files, frameworks, dependencies
-4. Read existing `specs/` and `plans/` for prior context
-5. Pre-fill answers you can infer (tech stack, existing patterns, integration points)
+4. Read `AGENTS.md` for project conventions and context
+5. Read existing `specs/` and `plans/` for prior context
+6. Pre-fill answers you can infer (tech stack, existing patterns, integration points)
 
 This reduces the interview to only what you can't determine from code.
 
@@ -71,17 +72,16 @@ Conduct a conversational interview. Batch questions in rounds — never dump all
 
 ---
 
-## Phase 3: Research (Optional, Autonomous)
+## Phase 3: Research
 
-If the feature touches unfamiliar tech or external APIs:
-1. Spawn research sub-agents (parallel) to investigate
-2. Results feed into the PRD's Technical Considerations section
-3. Do NOT interrupt the user for this phase
+After the interview, always run a research phase before generating the PRD. Do NOT interrupt the user for this phase.
 
-**Trigger conditions:**
-- Feature references an external API not seen in the codebase
-- User mentions a technology not in `.agents/commands.yml`
-- User explicitly requests research ("look into how X works")
+1. Spawn research sub-agents (parallel) to investigate relevant technologies, APIs, and patterns
+2. Cross-reference the codebase scan with the feature requirements — identify gaps in your understanding
+3. Research external APIs, libraries, or services referenced in the interview
+4. Results feed into the PRD's Technical Considerations section
+
+The depth of research scales with complexity — a simple CRUD feature gets a light pass, a new integration with an unfamiliar API gets a deep dive.
 
 ---
 
