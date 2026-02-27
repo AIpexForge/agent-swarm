@@ -46,7 +46,7 @@ Or manually add to `~/.openclaw/openclaw.json`:
 
 ## Step 3: Configure Telegram Account + Binding
 
-Add the Telegram account and binding to `~/.openclaw/openclaw.json`:
+Add to `~/.openclaw/openclaw.json`:
 
 ```json5
 {
@@ -54,7 +54,6 @@ Add the Telegram account and binding to `~/.openclaw/openclaw.json`:
   channels: {
     telegram: {
       accounts: {
-        // ... existing accounts ...
         blueprint: {
           botToken: "<BLUEPRINT_BOT_TOKEN>",
           dmPolicy: "allowlist",
@@ -67,7 +66,6 @@ Add the Telegram account and binding to `~/.openclaw/openclaw.json`:
 
   // Under bindings:
   bindings: [
-    // ... existing bindings ...
     {
       agentId: "blueprint",
       match: {
@@ -79,19 +77,14 @@ Add the Telegram account and binding to `~/.openclaw/openclaw.json`:
 }
 ```
 
-Replace:
-- `<BLUEPRINT_BOT_TOKEN>` with the token from BotFather
-- `<YOUR_TELEGRAM_ID>` with your Telegram user ID (numeric)
-
 ---
 
 ## Step 4: Set Up the Workspace
 
 ```bash
-# Create workspace directory
 mkdir -p ~/.openclaw/workspace-blueprint
 
-# Copy the prompt as the agent's system instructions
+# Copy prompt as agent instructions
 cp agents/blueprint/PROMPT.md ~/.openclaw/workspace-blueprint/AGENTS.md
 ```
 
@@ -138,20 +131,26 @@ openclaw agents list --bindings
 openclaw channels status --probe
 ```
 
-Then DM the Blueprint bot on Telegram to verify it responds.
+DM the Blueprint bot on Telegram to verify it responds.
 
 ---
 
-## Interactive Mode (via Servo)
+## Architecture
 
-Blueprint is primarily invoked as a sub-agent by Servo:
+Blueprint is a **standalone agent** with its own Telegram bot — not a sub-agent of Servo.
 
-1. User messages Servo: "I want to plan [feature] for [repo]"
-2. Servo spawns Blueprint as a sub-agent with target_repo and feature_description
-3. Blueprint conducts the interview directly with the user via Telegram
-4. Blueprint outputs the PR and exits
+**What Blueprint handles directly (phases 1-4):**
+- Pre-interview codebase scan
+- Discovery interview (3 rounds)
+- Optional research (spawns research sub-agents)
+- PRD generation
 
-For standalone testing, you can DM the Blueprint bot directly on Telegram.
+**What Blueprint delegates to sub-agents (phases 5-7):**
+- Validation (13-check quality scoring)
+- Review (4 parallel reviewers: architecture, requirements, scope, testStrategy)
+- GitHub output (PR + issue creation)
+
+**Phase 8 (handoff):** Blueprint sends the summary message, then the session ends.
 
 ---
 
