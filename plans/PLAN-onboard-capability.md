@@ -22,7 +22,7 @@ ONBOARD is build order #1 — every other agent depends on repo scaffolding (.ag
 - Handle re-onboarding (diff-aware merge with existing scaffolding)
 - Open PR for human review with rollback on failure
 - Batch human questions (max 7) for unknowns after max inference effort
-- Separate prompt file at agents/onboard/prompt.md
+- Separate prompt file at agents/onboard/AGENTS.md
 
 ## Not Doing
 

@@ -267,15 +267,15 @@ ONBOARD is build order #1 in the agent-swarm roadmap. The spec and plan for the 
 - **Dependencies:** REQ-001
 
 #### REQ-009: ONBOARD Prompt File
-- **Description:** The ONBOARD capability is defined in a separate prompt file at `agents/onboard/prompt.md` in the agent-swarm repo. Blueprint's main prompt references this file and loads it when the user triggers onboarding.
+- **Description:** The ONBOARD capability is defined in a separate prompt file at `agents/onboard/AGENTS.md` in the agent-swarm repo. Blueprint's main prompt references this file and loads it when the user triggers onboarding.
 - **Acceptance Criteria:**
-  1. Prompt file exists at `agents/onboard/prompt.md`
+  1. Prompt file exists at `agents/onboard/AGENTS.md`
   2. Prompt contains complete instructions for the ONBOARD workflow (scan → generate → ask → PR → notify)
   3. Blueprint's main prompt contains a reference to load this file on "onboard" trigger
   4. Prompt is self-contained — an agent reading only this file can execute the full ONBOARD workflow
 - **testStrategy:**
   - Acceptance criteria: File exists, is complete, Blueprint can load and execute it
-  - Verification approach: (1) Verify file exists at `agents/onboard/prompt.md`, (2) Verify prompt contains sections for each ONBOARD phase (scan, generate, ask, PR, notify), (3) Load prompt in a test session, send "onboard <test-repo>", verify session produces a PR URL in its final output message
+  - Verification approach: (1) Verify file exists at `agents/onboard/AGENTS.md`, (2) Verify prompt contains sections for each ONBOARD phase (scan, generate, ask, PR, notify), (3) Load prompt in a test session, send "onboard <test-repo>", verify session produces a PR URL in its final output message
   - Edge cases to test: Prompt file missing (Blueprint should error with clear message)
 - **Task Breakdown:** Prompt writing (2h), Blueprint reference integration (30m)
 - **Dependencies:** All other REQs (prompt must describe the full workflow)
@@ -333,7 +333,7 @@ User: "onboard myproject"
   │
   ▼
 Blueprint (main prompt)
-  │ loads agents/onboard/prompt.md
+  │ loads agents/onboard/AGENTS.md
   ▼
 ONBOARD Capability
   │
@@ -360,7 +360,7 @@ ONBOARD uses only the filesystem and GitHub CLI. No external APIs, no databases,
 
 ## Implementation Roadmap
 
-1. **Phase 1: Prompt file** — Write `agents/onboard/prompt.md` with full ONBOARD instructions
+1. **Phase 1: Prompt file** — Write `agents/onboard/AGENTS.md` with full ONBOARD instructions
 2. **Phase 2: Blueprint integration** — Add ONBOARD trigger detection to Blueprint's main prompt
 3. **Phase 3: Test against real repos** — Run ONBOARD against 2-3 diverse repos, validate output quality
 
@@ -416,7 +416,7 @@ REQ-007 (PR) → REQ-011 (notification)
 | Existing scaffolding detection + user prompt | M (2h) | Scanner |
 | PR creation (branch, commit, body template) | S (1.5h) | All generators |
 | Human fallback question batching | S (1.5h) | Scanner |
-| ONBOARD prompt file (agents/onboard/prompt.md) | L (3h) | All above defined |
+| ONBOARD prompt file (agents/onboard/AGENTS.md) | L (3h) | All above defined |
 | Blueprint trigger integration | S (30m) | Prompt file |
 | Clone logic for remote repos | S (1.5h) | None |
 | Completion notification | S (30m) | PR creation |
