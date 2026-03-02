@@ -11,7 +11,7 @@
 
 ## Changes from v1.0
 
-- **REQ-007 (Scope Review) deferred to v2** — Multiple reviewers flagged LLM-based scope estimation as non-deterministic and over-complex for v1. Trust decomposition prompt sizing; BUILD escalates if tasks run long.
+- **REQ-007 (Scope Review) reinstated for v1** — Simplified from full LLM estimation to single-pass classification: small (<15m), medium (15-30m), large (>30m). Split tasks >60m, merge tightly-coupled <10m tasks. Rules-based with LLM judgment on sizing — not a separate estimation pipeline.
 - **REQ-008 simplified** — Removed 50% threshold heuristic. Always complete remaining tasks on partial failure (never delete). Task plan persisted to plan issue comment before issue creation begins.
 - **REQ-008 duplicate detection** — Switched from title-based search to hash-based ID (`decomp_id` in metadata block) for deterministic matching.
 - **REQ-002 retry** — Retry path now runs duplicate detection (REQ-008) before re-invoking sub-agent.
@@ -426,11 +426,43 @@ PLAN Phase A (interactive mode) and ONBOARD are complete. Phase B is the next li
 - **Task Breakdown:** Message template (15m), integration (15m)
 - **Dependencies:** REQ-005
 
-### Deferred to v2
+#### REQ-007: Post-Decomposition Scope Review
+- **Description:** After the decomposition sub-agent creates task issues, Blueprint performs a single-pass scope review. Each task is classified by estimated BUILD agent execution time: small (<15 min), medium (15-30 min), or large (>30 min). Tasks estimated at 60+ min are split; tightly-coupled tasks under 10 min each are merged. Target: every task completable in ~30 min agent time.
+- **Acceptance Criteria:**
+  1. Blueprint reviews all created task issues after decomposition completes (before adding `decomposed` label)
+  2. Each task is classified as small / medium / large based on estimated agent minutes
+  3. Tasks classified as large (>60 min estimated) are split into smaller issues. Original issue is updated to reference the new sub-issues, and the new issues receive correct metadata blocks and `ready-for-build` labels.
+  4. Tightly-coupled small tasks (<10 min each, sequential dependency, touching the same files) may be merged into a single issue. The merged issue inherits the union of acceptance criteria and the stricter dependency set.
+  5. Split/merge operations update the dependency chain — no orphaned or circular references after modification
+  6. The plan issue summary comment (REQ-005) reflects the final task list after scope review (post-split/merge)
+  7. If no tasks need splitting or merging, scope review is a no-op — no issues are modified
+- **testStrategy:**
+  - Acceptance criteria: After scope review, no task is estimated at >60 min, dependency chain is valid, plan comment reflects final state
+  - Verification approach:
+    ```bash
+    # Verify plan issue comment lists final task count (post-split/merge)
+    comment=$(gh issue view <plan> --repo <target> --json comments -q '.comments[-1].body')
+    echo "$comment" | grep -q 'PLAN — Decomposed spec into'
 
-#### REQ-007: Scope Review by Blueprint (v2)
-- **Description:** Post-decomposition review where Blueprint evaluates task sizing and splits/merges as needed. Deferred because LLM-based scope estimation is non-deterministic and adds significant complexity (split/merge logic, dependency chain repairs). For v1, the decomposition prompt's sizing guidance is trusted, and BUILD escalates if a task runs long.
+    # Verify no orphaned dependencies
+    issues=$(gh issue list --repo <target> --label ready-for-build --json number,body)
+    python3 -c "
+    import json, sys, re
+    issues = json.loads(sys.stdin.read())
+    nums = {i['number'] for i in issues}
+    for i in issues:
+        meta = re.search(r'depends_on: (.*)', i['body'])
+        if meta and meta.group(1).strip() not in ('', 'pending'):
+            deps = [int(x.strip().lstrip('#')) for x in meta.group(1).split(',')]
+            for d in deps:
+                assert d in nums, f'Issue #{i["number"]} depends on #{d} which does not exist'
+    " <<< "$issues"
 
+    # Verify dependency DAG is acyclic (reuse REQ-009 validation)
+    ```
+  - Edge cases to test: All tasks are medium (no-op), one task needs splitting (new issues created with correct metadata), two small tasks merged (original issues updated), split creates a new dependency chain
+- **Task Breakdown:** Scope classification prompt (30m), split logic + issue creation (1h), merge logic + issue update (1h), dependency chain repair (30m)
+- **Dependencies:** REQ-002, REQ-003, REQ-005
 ---
 
 ## Non-Functional Requirements
@@ -477,9 +509,10 @@ Blueprint session starts
   │     ├─ Pass 2: Backfill depends_on with real issue numbers via gh issue edit
   │     └─ Return JSON result in final message
   │
-  ├─ 4. Update plan issue with task list comment
-  ├─ 5. Label spec PR 'decomposed'
-  └─ 6. Notify George via Telegram
+  ├─ 4. Scope review: classify tasks, split/merge as needed
+  ├─ 5. Update plan issue with task list comment (post-scope-review)
+  ├─ 6. Label spec PR 'decomposed'
+  └─ 7. Notify George via Telegram
 ```
 
 ### State Model
@@ -591,6 +624,9 @@ REQ-003 (task issue structure) ← depends on REQ-004, REQ-006
 REQ-005 (plan issue update + labels) ← depends on REQ-002, REQ-003
   │
   ▼
+REQ-007 (scope review) ← depends on REQ-002, REQ-003, REQ-005
+  │
+  ▼
 REQ-008 (idempotency) ← depends on REQ-001, REQ-003, REQ-005
   │
   ▼
@@ -611,7 +647,6 @@ REQ-010 (notification) ← depends on REQ-005
 - **Subtask creation** — Tasks are flat (no subtasks within a task issue)
 - **BUILD agent execution** — Separate spec
 - **Cron job configuration** — Operational setup, not specced here
-- **Scope review (split/merge)** — Deferred to v2 (see REQ-007)
 - **Label taxonomy creation** — ONBOARD creates the 6 core labels. Phase B only creates `decomposed` and verifies `ready-for-build` exists.
 
 ---
@@ -643,4 +678,5 @@ REQ-010 (notification) ← depends on REQ-005
 | Hash-based duplicate detection + partial state recovery | M (2h) | 30m | Task issue template |
 | Decomposition plan comment persistence | S (30m) | 10m | Decomposition prompt |
 | Telegram notification template | S (30m) | 10m | Plan issue update |
+| Post-decomposition scope review (classify, split/merge, dependency repair) | L (3h) | 45m | Sub-agent result handling |
 | `decomposed` + `ready-for-build` label bootstrap | S (15m) | 5m | None |
