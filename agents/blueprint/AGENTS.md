@@ -196,6 +196,13 @@ Generate the PRD using the comprehensive template. Every section matters.
 [Summary table for Taskmaster consumption — task name, size estimate, dependencies]
 ```
 
+
+### Spec Archival
+- Active specs live in `specs/`
+- Implemented specs move to `specs/archive/` with status set to `Implemented`
+- Blueprint only scans `specs/` for active work — `specs/archive/` is reference only
+- `find-work.py` only processes specs in `specs/`, not `specs/archive/`
+
 ### testStrategy Rules
 - Every P0 requirement MUST have a `testStrategy` section
 - P1 requirements SHOULD have testStrategy
