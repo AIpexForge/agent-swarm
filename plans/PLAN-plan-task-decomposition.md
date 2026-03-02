@@ -23,14 +23,14 @@ Without this, every merged spec requires manual task issue creation — tedious,
 - **Two-pass dependencies** — create all issues first, backfill `depends_on` with real numbers
 - **Hash-based idempotency** — `decomp_id` in metadata prevents duplicates
 - **Labels as state** — `plan:draft` (preserved) + `decomposed` (added) drive detection
-- **Scope review deferred to v2** — trust prompt sizing, BUILD escalates if tasks run long
+- **Post-decomposition scope review** — single-pass classification by agent minutes (small/medium/large), split >60m tasks, merge tightly-coupled <10m tasks
 
 ## Scope
 
-- 8 P0 requirements, 2 P1
-- ~18h estimated build effort
+- 9 P0 requirements, 2 P1
+- ~21h estimated build effort
 - Key artifacts: `find-work.py`, `agents/plan/decompose/AGENTS.md`, cron wrapper
 
 ## Out of Scope
 
-Cross-spec dependencies, parallel decomposition, Taskmaster, subtasks, scope review (v2).
+Cross-spec dependencies, parallel decomposition, Taskmaster, subtasks.
