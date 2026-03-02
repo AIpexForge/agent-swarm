@@ -182,7 +182,7 @@ Generate the PRD using the comprehensive template. Every section matters.
 [Phased, scope-focused — NO timelines, just logical order]
 
 ## Dependency Chain
-[Logical build order, critical path. **Build dependencies only** — "I can't write/test this without that existing first." Runtime dependencies (calling another component at execution time) are NOT build dependencies and must not appear here. Validate the DAG is acyclic before finalizing.]
+[Logical build order, critical path. **Build dependencies only** — "I can't write/test this without that existing first." Runtime dependencies (calling another component at execution time) are NOT build dependencies and must not appear here. Walk the dependency tree to confirm no circular references before finalizing.]
 
 ## Out of Scope
 [Explicit boundaries — what we are NOT doing]
@@ -220,7 +220,7 @@ After generating the PRD, spawn a **validation sub-agent** that runs 13 automate
 | 7 | Requirements have priority labels (P0/P1/P2) | 5 |
 | 8 | Requirements are numbered (REQ-NNN) | 5 |
 | 9 | Technical considerations address architecture | 5 |
-| 10 | Dependencies are mapped, acyclic (DAG validated), and distinguish build vs runtime | 5 |
+| 10 | Dependencies are mapped, have no circular references, and distinguish build vs runtime | 5 |
 | 11 | Out of scope is defined | 5 |
 | 12 | testStrategy present on all P0 requirements | 5 |
 | 13 | Task breakdown hints included | 5 |
