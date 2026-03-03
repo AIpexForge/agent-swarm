@@ -37,6 +37,23 @@ Before asking any interview questions:
 
 This reduces the interview to only what you can't determine from code.
 
+### Request Classification
+
+After the codebase scan, classify the request before interviewing:
+
+- **Trivial** (single endpoint, config change, <10 lines) — Skip full interview. Propose solution, confirm, generate minimal PRD.
+- **Simple** (1-2 components, clear scope, <1 day work) — 1 focused round. Confirm assumptions from scan, ask only critical unknowns.
+- **Standard** (multi-component feature, clear boundaries) — Full 3-round interview as described below.
+- **Complex** (system design, multi-service, architectural impact) — Extended interview (4+ rounds) + deep research phase + architecture review sub-agent.
+
+This classification determines:
+- Number of interview rounds (0 for trivial, 1 for simple, 3 for standard, 4+ for complex)
+- Research depth (none / light / deep)
+- Whether to use sub-agent reviewers in Phase 6 (skip for trivial/simple)
+- PRD template (minimal for trivial/simple, comprehensive for standard/complex)
+
+If classification is ambiguous, ask the user: "This could be a quick change or a larger feature. Which feels right?"
+
 ---
 
 ## Phase 2: Discovery Interview
@@ -70,18 +87,87 @@ Conduct a conversational interview. Batch questions in rounds — never dump all
 - Document ALL assumptions in the PRD's Open Questions section.
 - Keep the interview under 15 minutes. If the user is engaged and wants to go deeper, follow their lead.
 
+### Interview Working Memory
+
+During the interview, maintain a running mental summary of:
+
+- **Confirmed requirements** — what the user explicitly stated
+- **Technical decisions** — stack choices, integration approaches, patterns
+- **Research needs** — topics requiring Phase 3 investigation
+- **Open questions** — ambiguities not yet resolved
+- **Scope boundaries** — what's IN and what's explicitly OUT
+
+After each round, briefly restate your understanding to the user: "So far I have: [summary]. Moving to [next topic]." This prevents drift in long conversations and gives the user a chance to correct misunderstandings before they compound.
+
+For multi-session conversations (user returns hours later), open with: "Picking up where we left off. Here's what we've established: [summary]. Ready to continue?"
+
+### Auto-Transition Rule
+
+After EACH interview round, run this self-check:
+
+```
+CLEARANCE CHECK:
+□ Core objective clearly defined?
+□ Scope boundaries established (IN and OUT)?
+□ No critical ambiguities remaining?
+□ Technical approach decided (or inferable from codebase)?
+□ testStrategy approach clear for P0 requirements?
+□ No blocking questions outstanding?
+```
+
+- **ALL YES** → Skip remaining rounds. Announce: "I have everything I need. Moving to research and PRD generation." Proceed to Phase 3.
+- **ANY NO** → Continue with the next round, targeting the specific unclear area.
+- **User says "just generate it"** → Respect user agency. Proceed with what you have, documenting gaps in Open Questions. Note: "User chose to proceed with [N] open questions."
+
 ---
 
 ## Phase 3: Research
 
 After the interview, always run a research phase before generating the PRD. Do NOT interrupt the user for this phase.
 
-1. Spawn research sub-agents (parallel) to investigate relevant technologies, APIs, and patterns
-2. Cross-reference the codebase scan with the feature requirements — identify gaps in your understanding
-3. Research external APIs, libraries, or services referenced in the interview
-4. Results feed into the PRD's Technical Considerations section
+### 3.1 — Determine Research Needs
 
-The depth of research scales with complexity — a simple CRUD feature gets a light pass, a new integration with an unfamiliar API gets a deep dive.
+From the interview, extract research topics:
+- **Codebase questions**: "How is X currently implemented? What patterns exist for Y?"
+- **External questions**: "What API does Z expose? What's the recommended approach for W?"
+- **Gap questions**: "What did the user assume I know that I don't?"
+
+The depth of research scales with the classification from Phase 1:
+- **Trivial/Simple**: Skip research entirely, or a single quick lookup
+- **Standard**: 1-2 focused sub-agents
+- **Complex**: 3-4 parallel sub-agents covering codebase + external + architecture
+
+### 3.2 — Spawn Research Sub-Agents (Parallel)
+
+**For codebase understanding:**
+> "I'm building [feature] for [repo] and need to match existing codebase conventions exactly. Find 2-3 most similar implementations — document: directory structure, naming pattern, public API exports, shared utilities used, error handling, and registration/wiring steps. Return concrete file paths and patterns, not abstract descriptions."
+
+**For external APIs/libraries:**
+> "I'm integrating [library/API] and need authoritative implementation guidance. Find official docs: setup, API reference, config options with defaults, pitfalls, and migration gotchas. Also find 1-2 production-quality open-source examples (not tutorials). Return: key API signatures, recommended config, common mistakes."
+
+**For architecture decisions (complex classification only):**
+> "I'm designing [subsystem] and need to evaluate trade-offs before committing to an approach. Find architectural best practices for this domain: proven patterns, scalability trade-offs, common failure modes, and real-world case studies from engineering blogs. Return: options with pros/cons, recommended approach with rationale."
+
+### 3.3 — Synthesize Findings
+
+Combine all research results into a coherent picture:
+1. Resolve conflicts between sources (prefer official docs over blog posts)
+2. Flag findings that contradict interview assumptions — these become Open Questions
+3. Results feed directly into the PRD's Technical Considerations section
+
+### 3.4 — Pre-Generation Gap Check
+
+Before generating the PRD, review your understanding for completeness:
+
+1. **Spawn a gap-analysis sub-agent** with your interview summary and research findings:
+   > "Review this planning session. The user wants [goal]. We discussed [key points]. Research found [findings]. Identify: questions that should have been asked, guardrails that need setting, assumptions that need validation, missing acceptance criteria, and edge cases not addressed."
+
+2. **Classify each gap found:**
+   - **Critical** (ambiguous business logic, unclear scope boundary) → Ask the user before proceeding
+   - **Minor** (missing file path, obvious default) → Self-resolve, note in Open Questions
+   - **Ambiguous** (reasonable default exists) → Apply default, document assumption in Open Questions
+
+3. **Maximum 1 follow-up round with the user** for critical gaps. After that, proceed to Phase 4 with remaining gaps documented in Open Questions. Do not loop indefinitely.
 
 ---
 
@@ -206,9 +292,38 @@ Generate the PRD using the comprehensive template. Every section matters.
 ### testStrategy Rules
 - Every P0 requirement MUST have a `testStrategy` section
 - P1 requirements SHOULD have testStrategy
-- testStrategy must be concrete enough for an autonomous TEST agent to validate
+- testStrategy must be concrete enough for an autonomous TEST agent to validate without asking questions
 - The TEST agent never sees BUILD's implementation approach — only the spec's testStrategy
 - Avoid vague verification: "check it works" ❌ → "Send POST /api/webhook with payload X, verify 200 response and database row created" ✅
+
+**Specificity requirements — every testStrategy MUST include:**
+- **Tool**: What validates this (curl, Playwright, bun test, specific CLI command)
+- **Input**: Concrete test data ("test@example.com", not "[email]")
+- **Assertion**: Exact expected result (status 200, body contains field X with value Y — not "returns correct data")
+- **At least ONE failure scenario** per P0 requirement (invalid input, missing auth, rate limit exceeded)
+
+**Examples:**
+- ❌ BAD: "Verify the login endpoint works correctly"
+- ✅ GOOD: "POST /api/auth/login with {email: 'test@example.com', password: 'validpass'} → 200, response.token is non-empty string. POST with {email: 'test@example.com', password: 'wrong'} → 401, response.error is 'INVALID_CREDENTIALS'."
+
+### PRD Anti-Patterns (Must Avoid)
+
+Watch for and prevent these common patterns in generated PRDs:
+
+- **Scope creep via requirements**: Don't invent requirements the user didn't ask for. If you think something is needed, put it in Open Questions, not Requirements.
+- **Premature architecture**: Don't propose microservices when a function works. Match solution complexity to problem complexity.
+- **Vague testStrategy**: "Verify it works" is NOT a testStrategy. Every testStrategy must name a specific action and expected result. (See testStrategy Rules above.)
+- **Dependency inflation**: Only list BUILD dependencies ("I can't code this without that existing first"). Runtime dependencies (calling another component at execution time) are NOT build dependencies and must not appear in the Dependency Chain.
+- **Gold-plating Non-Functionals**: Don't add "99.99% uptime" and "< 50ms p99" to an internal tool for 3 users. Scale NFR thresholds to the actual context — audience size, criticality, and existing infrastructure.
+- **Over-specified task breakdowns**: Task hints should be directional, not prescriptive. BUILD agents need room to make implementation decisions.
+
+### Large PRD Protocol
+
+For complex features (>15 requirements or >5 systems involved):
+
+1. **Generate the PRD incrementally**: Write the skeleton first (all section headers + metadata + Executive Summary), then fill sections one at a time. This prevents output truncation on large documents.
+2. **After completing the PRD**, read it back in full to verify no sections were lost or truncated.
+3. **For standard features**, generate the complete PRD in one pass as usual.
 
 ---
 
@@ -361,6 +476,19 @@ Review and merge when ready. I'll decompose into tasks on next cron run.
 5. **Respect the user's time.** Batch questions, skip what you already know, confirm don't re-ask.
 6. **Never hallucinate APIs or libraries.** If unsure about an external dependency, flag it for research.
 7. **The PRD is the contract.** BUILD and TEST agents will work from this document. Ambiguity here becomes bugs later.
+
+### Turn Management
+
+Every message you send must end with ONE of:
+- **A specific question** to the user (drives conversation forward)
+- **A confirmation + next question** ("Got it — X and Y. Now, about Z...")
+- **An action announcement** ("Running research now. I'll have the PRD ready shortly.")
+- **A handoff summary** (Phase 8 only)
+
+NEVER end with:
+- "Let me know if you have questions" (passive — puts burden on user)
+- A summary without a follow-up question (dead end)
+- "Ready when you are" (stalls conversation)
 
 ---
 
