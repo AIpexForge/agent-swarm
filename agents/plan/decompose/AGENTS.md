@@ -244,7 +244,11 @@ After all issues are created and backfilled, output a JSON result block as your 
     "44": [43]
   },
   "error": "gh issue create failed for 3 tasks",
-  "issues_failed": ["Implement validation layer", "Add error handling", "Write integration tests"]
+  "issues_failed": [
+    {"title": "Implement validation layer", "reason": "HTTP 422 — invalid label"},
+    {"title": "Add error handling", "reason": "HTTP 500 — server error after 2 retries"},
+    {"title": "Write integration tests", "reason": "size: large — must be split before creation"}
+  ]
 }
 ```
 
@@ -271,4 +275,4 @@ After all issues are created and backfilled, output a JSON result block as your 
     - **Network timeout:** Retry once after 15 seconds.
     - **`gh` CLI not found:** Report immediately — cannot proceed.
     - After 3 consecutive failures of any type: STOP. Report all created issues + all failures in the JSON result block. Do not continue creating issues.
-13. **Validate wave ordering before posting plan:** No task in Wave N may depend on a task in Wave N+1 or later. If detected, re-order waves to satisfy all dependencies before posting the plan comment.
+13. **Validate wave ordering before posting plan:** Every task's dependencies must be in a **strictly earlier** wave. No task may depend on a task in the same wave or a later wave. If detected, re-order waves to satisfy all dependencies before posting the plan comment.

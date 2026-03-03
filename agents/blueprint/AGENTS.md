@@ -54,6 +54,24 @@ This classification determines:
 
 If classification is ambiguous, ask the user: "This could be a quick change or a larger feature. Which feels right?"
 
+### Lettered Option Format (Standard/Complex only)
+
+For Standard and Complex classifications, use a structured lettered-option format that lets users respond with shorthand (e.g., "1A, 2C, 3B") instead of full prose:
+
+```
+1. What is the scope?
+   A. Minimal viable version
+   B. Full-featured implementation
+   C. Just the backend/API
+
+2. Auth approach?
+   A. Use existing auth system
+   B. New auth flow needed
+   C. No auth — internal tool
+```
+
+This reduces interview friction — especially for mobile/chat interfaces. For Trivial/Simple classifications, skip this format; you're just confirming assumptions, not collecting structured choices.
+
 These are sizing guidelines, not hard rules. A 15-line config change is still trivial. A 50-line copy-paste migration is still simple. Use judgment — classify by *cognitive complexity*, not line count.
 
 ---
@@ -118,6 +136,7 @@ CLEARANCE CHECK:
 □ Technical approach decided (or inferable from codebase)?
 □ testStrategy approach clear for P0 requirements?
 □ No blocking questions outstanding?
+□ Requirements scoped small enough for autonomous agent execution?
 ```
 
 - **ALL YES** → Skip remaining rounds. Announce: "I have everything I need. Moving to research and PRD generation." Proceed to Phase 3.
@@ -189,6 +208,10 @@ If the gap agent returns more than 3 critical gaps, this signals an insufficient
 ---
 
 ## Phase 4: PRD Generation
+
+### PRD Audience
+
+The PRD audience is autonomous BUILD/TEST agents and junior developers. Write for readers with zero context about this codebase beyond what you provide. Avoid assumed knowledge, implicit conventions, or shorthand that requires project history to decode.
 
 Generate the PRD using the comprehensive template. Every section matters.
 
@@ -299,6 +322,122 @@ Generate the PRD using the comprehensive template. Every section matters.
 [Summary table for Taskmaster consumption — task name, size estimate, dependencies]
 ```
 
+### Example PRD (Simple Classification)
+
+This complete example demonstrates the template filled out for a Simple-classified request, including testStrategy in the full Tool/Input/Assertion/Failure format.
+
+```markdown
+# PRD: API Rate Limiting
+
+**Author:** Blueprint (AI) + George Sapp
+**Date:** 2026-03-01
+**Status:** Draft
+**Version:** 1.0
+**Target Repo:** AIpexForge/snaphappy
+**Taskmaster Optimized:** Yes
+
+---
+
+## Executive Summary
+API endpoints currently have no rate limiting, allowing a single client to overwhelm the server. This feature adds per-IP rate limiting to all public API routes using an in-memory sliding window, returning 429 responses when limits are exceeded.
+
+## Problem Statement
+### Current Situation
+All API endpoints accept unlimited requests from any client with no throttling.
+### User Impact
+During traffic spikes, legitimate users experience slow responses or timeouts because a few clients consume all server capacity. Severity: medium — affects availability during peak load.
+### Business Impact
+One abusive client caused a 12-minute outage on 2026-02-15 (see incident #23). Rate limiting is the standard mitigation.
+### Why Now
+Second outage in 30 days. Quick win before the v2 launch in March.
+
+## Goals & Success Metrics
+| Goal | Metric | Baseline (source) | Target | Timeframe | Measurement |
+|------|--------|--------------------|--------|-----------|-------------|
+| Prevent single-client abuse | Max requests per IP per minute | Unlimited (logs) | 60/min | Immediate | Server logs + 429 response count |
+| Maintain normal user experience | P95 latency for rate-limited endpoints | 120ms (Datadog) | <150ms | 1 week | Datadog dashboard |
+
+## User Stories
+### US-001: Rate-limited API consumer
+- **As a** API consumer
+- **I want to** receive a clear 429 response when I exceed the rate limit
+- **So that** I can implement backoff logic instead of getting silent failures
+- **Acceptance Criteria:**
+  1. Requests beyond 60/min per IP return HTTP 429
+  2. Response includes `Retry-After` header with seconds until reset
+  3. Response body includes `{"error": "RATE_LIMITED", "retryAfter": <seconds>}`
+- **Task Hints:** Add rate-limit middleware (~2 hours), wire into Express app (~30 min)
+- **Dependencies:** None
+
+## Functional Requirements
+
+### P0 — Must Have
+#### REQ-001: Per-IP sliding window rate limiter
+- **Description:** All routes under `/api/` enforce a 60-request-per-minute limit per client IP using a sliding window algorithm. Requests exceeding the limit receive HTTP 429.
+- **Acceptance Criteria:**
+  1. 60th request within 60 seconds from the same IP succeeds (200)
+  2. 61st request within 60 seconds from the same IP returns 429
+  3. After the window slides past the oldest request, new requests succeed again
+- **testStrategy:**
+  - **Tool:** curl + bun test
+  - **Input:** Send 61 POST requests to `POST /api/photos` with body `{"url": "https://example.com/test.jpg"}` from the same IP within 60 seconds
+  - **Assertion:** Requests 1-60 return HTTP 200. Request 61 returns HTTP 429 with body `{"error": "RATE_LIMITED", "retryAfter": <number>}` and header `Retry-After: <number>`
+  - **Failure scenario:** Send 61 requests with header `X-Forwarded-For: 10.0.0.1` — verify the 61st returns 429. Then send 1 request with `X-Forwarded-For: 10.0.0.2` — verify it returns 200 (different IP, separate window)
+- **Technical Spec:** Express middleware using `Map<string, {count: number, windowStart: number}>`. Clean up expired entries every 60 seconds via `setInterval`.
+- **Task Breakdown:** Implement middleware (small), wire into app.ts (small)
+- **Dependencies:** None
+
+### P1 — Should Have
+#### REQ-002: Rate limit headers on all responses
+- **Description:** All API responses include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers.
+- **Acceptance Criteria:**
+  1. Every 200 response includes all three headers
+  2. `X-RateLimit-Remaining` decrements with each request
+- **testStrategy:**
+  - **Tool:** curl
+  - **Input:** `curl -i POST /api/photos -d '{"url": "https://example.com/test.jpg"}'`
+  - **Assertion:** Response headers include `X-RateLimit-Limit: 60`, `X-RateLimit-Remaining: 59`, `X-RateLimit-Reset: <unix-timestamp>`
+
+## Non-Functional Requirements
+- **Performance:** Rate limit check adds <5ms to request latency (measured via middleware timing)
+- **Scalability:** In-memory store is acceptable for single-server v1. Note in Open Questions: Redis adapter needed for multi-server deployment.
+
+## Technical Considerations
+### System Architecture
+```
+Request → Express → [Rate Limit Middleware] → Route Handler → Response
+                         │
+                         └── In-memory Map<IP, WindowState>
+```
+### Technology Stack
+Node.js 20, Express 4.x, TypeScript (confirmed from codebase scan)
+
+## Implementation Roadmap
+1. Rate limit middleware + unit tests
+2. Wire middleware into app.ts
+3. Add rate limit response headers (REQ-002)
+
+## Dependency Chain
+No inter-task build dependencies. All tasks can start in parallel.
+
+## Out of Scope
+- Redis-backed rate limiting (future multi-server support)
+- Per-user or per-API-key limits (requires auth system changes)
+- Rate limit configuration UI
+
+## Open Questions & Risks
+| # | Question/Risk | Owner | Status |
+|---|---------------|-------|--------|
+| 1 | Should rate limits apply to authenticated admin routes? | George | Open |
+| 2 | Redis adapter needed before multi-server deploy | Blueprint | Documented |
+
+## Appendix: Task Breakdown Hints
+| Task | Size | Dependencies |
+|------|------|-------------|
+| Implement rate limit middleware + tests | small | — |
+| Wire middleware into app.ts | small | — |
+| Add rate limit headers (REQ-002) | small | Middleware exists |
+```
 
 ### Spec Archival
 - Active specs live in `specs/`
@@ -344,6 +483,7 @@ Watch for and prevent these common patterns in generated PRDs:
 - **Dependency inflation**: Only list BUILD dependencies ("I can't code this without that existing first"). Runtime dependencies (calling another component at execution time) are NOT build dependencies and must not appear in the Dependency Chain.
 - **Gold-plating Non-Functionals**: Don't add "99.99% uptime" and "< 50ms p99" to an internal tool for 3 users. Scale NFR thresholds to the actual context — audience size, criticality, and existing infrastructure.
 - **Over-specified task breakdowns**: Task hints should be directional, not prescriptive. BUILD agents need room to make implementation decisions.
+- **Context-exceeding stories**: Don't write user stories or requirements that require more than one agent context window to implement. If a story can't be described in 2-3 sentences, it needs splitting. DECOMPOSE handles the final breakdown, but Blueprint should avoid creating monolithic requirements that fight the decomposition step.
 
 ### Large PRD Protocol
 

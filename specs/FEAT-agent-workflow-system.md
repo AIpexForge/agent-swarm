@@ -279,6 +279,9 @@ depends_on:
 ```
 
 Agents update this block directly on the issue body. Fields:
+
+> **State derivation:** Task state is determined by **GitHub labels** (e.g., `ready-for-build`, `ready-for-test`, `ready-for-review`, `ready-for-merge`, `escalated`), not by a field in the meta block. The `status` field was intentionally removed to avoid dual-source-of-truth conflicts between labels and metadata. All agents that need to determine task state should query labels via `gh issue view --json labels`, not parse the meta block.
+
 - `attempts_build` — BUILD agent attempt count
 - `attempts_test` — TEST agent attempt count
 - `attempts_review` — REVIEW agent attempt count
@@ -289,7 +292,7 @@ Agents update this block directly on the issue body. Fields:
 - `spec_sha` — Git SHA (first 7 chars) of the spec at decomposition time
 - `plan` — Issue number of the parent plan
 - `pr` — PR number once created
-- `depends_on` — Comma-separated issue refs (e.g., `#43,#44`) or empty
+- `depends_on` — Comma-separated issue refs (e.g., `#43,#44`) or empty. Used by DECOMPOSE during task creation (backfilled in Pass 2) and by BUILD agents to determine if prerequisite tasks are complete before starting work
 
 ### Agent Comment Format
 
@@ -368,8 +371,6 @@ OpenClaw-Workflow/
 │   │   ├── prompt.md
 │   │   └── scripts/
 │   │       └── find-work.sh    # Detect merged specs without tasks
-
-> **Note:** PLAN uses `find-work.py` (Python) for richer JSON parsing and multi-repo logic. Other agents use `find-work.sh` (shell) for simpler single-query discovery.
 │   ├── build/
 │   │   ├── agent.yml
 │   │   ├── prompt.md
@@ -402,6 +403,8 @@ OpenClaw-Workflow/
 ├── AGENTS.md
 └── README.md
 ```
+
+> **Note:** PLAN uses `find-work.py` (Python) for richer JSON parsing and multi-repo logic. Other agents use `find-work.sh` (shell) for simpler single-query discovery.
 
 ---
 
