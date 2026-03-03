@@ -41,8 +41,8 @@ This reduces the interview to only what you can't determine from code.
 
 After the codebase scan, classify the request before interviewing:
 
-- **Trivial** (single endpoint, config change, <10 lines) — Skip full interview. Propose solution, confirm, generate minimal PRD.
-- **Simple** (1-2 components, clear scope, <1 day work) — 1 focused round. Confirm assumptions from scan, ask only critical unknowns.
+- **Trivial** (single endpoint, config change, ~10 lines or fewer) — Skip full interview. Propose solution, confirm, generate minimal PRD.
+- **Simple** (1-2 components, clear scope, ~1 day or less) — 1 focused round. Confirm assumptions from scan, ask only critical unknowns.
 - **Standard** (multi-component feature, clear boundaries) — Full 3-round interview as described below.
 - **Complex** (system design, multi-service, architectural impact) — Extended interview (4+ rounds) + deep research phase + architecture review sub-agent.
 
@@ -53,6 +53,8 @@ This classification determines:
 - PRD template (minimal for trivial/simple, comprehensive for standard/complex)
 
 If classification is ambiguous, ask the user: "This could be a quick change or a larger feature. Which feels right?"
+
+These are sizing guidelines, not hard rules. A 15-line config change is still trivial. A 50-line copy-paste migration is still simple. Use judgment — classify by *cognitive complexity*, not line count.
 
 ---
 
@@ -89,15 +91,18 @@ Conduct a conversational interview. Batch questions in rounds — never dump all
 
 ### Interview Working Memory
 
-During the interview, maintain a running mental summary of:
+Before each response during the interview, review the conversation history and produce a brief status block:
 
-- **Confirmed requirements** — what the user explicitly stated
-- **Technical decisions** — stack choices, integration approaches, patterns
-- **Research needs** — topics requiring Phase 3 investigation
-- **Open questions** — ambiguities not yet resolved
-- **Scope boundaries** — what's IN and what's explicitly OUT
+```
+STATUS: Round [N] of [max]
+CONFIRMED: [bullet list of confirmed requirements]
+DECIDED: [technical decisions made]
+OPEN: [unresolved questions]
+SCOPE: IN=[list] | OUT=[list]
+NEXT: [what you'll ask about next]
+```
 
-After each round, briefly restate your understanding to the user: "So far I have: [summary]. Moving to [next topic]." This prevents drift in long conversations and gives the user a chance to correct misunderstandings before they compound.
+This block anchors both you and the user. After each round, briefly restate your understanding using this format: "So far I have: [summary from status block]. Moving to [next topic]." This prevents drift in long conversations and gives the user a chance to correct misunderstandings before they compound.
 
 For multi-session conversations (user returns hours later), open with: "Picking up where we left off. Here's what we've established: [summary]. Ready to continue?"
 
@@ -155,6 +160,16 @@ Combine all research results into a coherent picture:
 2. Flag findings that contradict interview assumptions — these become Open Questions
 3. Results feed directly into the PRD's Technical Considerations section
 
+### Sub-Agent Prompt Structure
+
+All sub-agent prompts (research, validation, review, gap-check, GitHub output) should follow this structure:
+- **Task**: What specifically to do (1-2 sentences)
+- **Context**: Background the sub-agent needs (interview findings, repo info)
+- **Expected Output**: What to return (format, fields, structure)
+- **Must NOT**: Explicit constraints (don't execute code, don't hallucinate, don't modify files)
+
+The research templates in §3.2 demonstrate this pattern. Apply it consistently to Phase 5 (validation), Phase 6 (review), and Phase 7 (GitHub output) sub-agent invocations.
+
 ### 3.4 — Pre-Generation Gap Check
 
 Before generating the PRD, review your understanding for completeness:
@@ -168,6 +183,8 @@ Before generating the PRD, review your understanding for completeness:
    - **Ambiguous** (reasonable default exists) → Apply default, document assumption in Open Questions
 
 3. **Maximum 1 follow-up round with the user** for critical gaps. After that, proceed to Phase 4 with remaining gaps documented in Open Questions. Do not loop indefinitely.
+
+If the gap agent returns more than 3 critical gaps, this signals an insufficient interview — not a gap-check problem. Return to Phase 2 for one focused round targeting the top 3 gaps. Document remaining gaps in Open Questions. Do not attempt to resolve 4+ critical gaps via follow-up text.
 
 ---
 
@@ -306,6 +323,17 @@ Generate the PRD using the comprehensive template. Every section matters.
 - ❌ BAD: "Verify the login endpoint works correctly"
 - ✅ GOOD: "POST /api/auth/login with {email: 'test@example.com', password: 'validpass'} → 200, response.token is non-empty string. POST with {email: 'test@example.com', password: 'wrong'} → 401, response.error is 'INVALID_CREDENTIALS'."
 
+**For non-API requirements** (UI, migrations, infrastructure, config), adapt the format:
+- **Tool**: What validates this (Playwright for UI, migration script dry-run, healthcheck endpoint)
+- **Setup**: Required preconditions/state (seed data loaded, feature flag enabled, clean database)
+- **Action**: What to do (navigate to /settings, run migration, restart service)
+- **Assertion**: Observable result (element `.dark-mode-toggle` visible, table `users` has column `mfa_enabled`, service responds 200 on /health within 30s)
+- **Rollback**: How to undo if it fails (revert migration, restore config)
+
+**Examples:**
+- ❌ BAD: "Verify the dark mode toggle works"
+- ✅ GOOD: "Playwright: Navigate to /settings, click `[data-testid=theme-toggle]`, assert `document.body` has class `dark`. Screenshot evidence. Revert: click toggle again, assert class `light`."
+
 ### PRD Anti-Patterns (Must Avoid)
 
 Watch for and prevent these common patterns in generated PRDs:
@@ -321,7 +349,7 @@ Watch for and prevent these common patterns in generated PRDs:
 
 For complex features (>15 requirements or >5 systems involved):
 
-1. **Generate the PRD incrementally**: Write the skeleton first (all section headers + metadata + Executive Summary), then fill sections one at a time. This prevents output truncation on large documents.
+1. **Generate the PRD incrementally**: Write the skeleton first (all section headers + metadata + Executive Summary), then fill sections one at a time. Track completion by working through sections in this order: Executive Summary → Problem Statement → Goals → User Stories → P0 Requirements → P1 Requirements → P2 Requirements → NFRs → Technical Considerations → Implementation Roadmap → Dependency Chain → Out of Scope → Open Questions → Appendix. After each section, read the document from the top to verify no prior sections were lost or corrupted. This prevents output truncation on large documents.
 2. **After completing the PRD**, read it back in full to verify no sections were lost or truncated.
 3. **For standard features**, generate the complete PRD in one pass as usual.
 

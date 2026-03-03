@@ -264,24 +264,32 @@ Every task issue contains a metadata block at the top of the issue body:
 
 ```markdown
 <!-- agent-meta
-status: ready-for-build
-attempts: 0
+attempts_build: 0
+attempts_test: 0
+attempts_review: 0
 max_attempts: 3
+size: small
 feature_branch: feat/add-webhook-handler
 spec: specs/FEAT-add-webhook-handler.md
+spec_sha: abc1234
 plan: #42
-pr: 
+pr:
+depends_on:
 -->
 ```
 
 Agents update this block directly on the issue body. Fields:
-- `status` — Current state (`ready-for-build`, `in-progress`, `ready-for-test`, `ready-for-review`, `ready-for-merge`, `complete`, `escalated`)
-- `attempts` — Number of build/test/review cycles
+- `attempts_build` — BUILD agent attempt count
+- `attempts_test` — TEST agent attempt count
+- `attempts_review` — REVIEW agent attempt count
 - `max_attempts` — Retry limit (default: 3)
+- `size` — Task size estimate (`small` or `medium`)
 - `feature_branch` — Target branch for PRs
 - `spec` — Path to the spec file in the repo
+- `spec_sha` — Git SHA (first 7 chars) of the spec at decomposition time
 - `plan` — Issue number of the parent plan
 - `pr` — PR number once created
+- `depends_on` — Comma-separated issue refs (e.g., `#43,#44`) or empty
 
 ### Agent Comment Format
 
@@ -360,6 +368,8 @@ OpenClaw-Workflow/
 │   │   ├── prompt.md
 │   │   └── scripts/
 │   │       └── find-work.sh    # Detect merged specs without tasks
+
+> **Note:** PLAN uses `find-work.py` (Python) for richer JSON parsing and multi-repo logic. Other agents use `find-work.sh` (shell) for simpler single-query discovery.
 │   ├── build/
 │   │   ├── agent.yml
 │   │   ├── prompt.md

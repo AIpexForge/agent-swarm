@@ -50,7 +50,7 @@ Break requirements into tasks following these rules:
 2. **~200 lines changed** is a sizing guideline, not a hard ceiling. Prompt files, config files, and documentation tasks may legitimately exceed this.
 3. **Derive acceptance criteria and testStrategy from the spec's REQ sections.** Do not invent new criteria — extract, adapt, and scope them to the specific task.
 4. **Map dependencies between tasks.** Foundation tasks (shared types, config, utilities) come first. Tasks that consume those outputs come later.
-5. **Every P0 requirement must produce at least one task.** P1 requirements should produce tasks. P2 requirements are optional.
+5. **Every P0 requirement must produce at least one task.** P1 requirements should produce tasks. P2 requirements are optional. If the spec has zero P0 requirements, flag this in the plan comment Notes section: "Warning: No P0 requirements found. Confirm with Blueprint whether any requirements should be elevated to P0 before proceeding." Do not block — proceed with P1/P2 task creation.
 6. **Classify each task** as:
    - `small` — <15 min agent time
    - `medium` — 15-30 min agent time
@@ -143,6 +143,7 @@ max_attempts: 3
 size: <small|medium>
 feature_branch: <feature_branch>
 spec: <spec_path>
+spec_sha: <first 7 chars of git SHA for the spec file>
 plan: #<plan_issue>
 pr:
 depends_on: pending
@@ -178,7 +179,8 @@ depends_on: pending
 
 **Rules for Pass 1:**
 - `depends_on` is always `pending` in Pass 1. Real issue numbers are backfilled in Pass 2.
-- `size` must be `small` or `medium`. If Blueprint approved a task as `large`, something went wrong — do not create it; report the error.
+- `size` must be `small` or `medium`. If Blueprint approved a task as `large`, something went wrong. Do not create it. Skip to the next task, and include the large task in the `issues_failed` array of the JSON result block with reason `size: large — must be split before creation`. Continue creating remaining tasks.
+- Obtain `spec_sha` by running `git log -1 --format='%h' -- <spec_path>` before creating issues.
 - Record each created issue number from the `gh issue create` output.
 - If `gh issue create` fails, record the failure and continue with remaining tasks. Report all failures at the end.
 
@@ -191,13 +193,23 @@ After ALL issues are created, update each issue's `depends_on` field with real i
 # 1. Get the current body
 body=$(gh issue view <issue_num> --repo <repo> --json body -q .body)
 
-# 2. Replace "depends_on: pending" with real refs
-# e.g., "depends_on: #43,#44"
-new_body=$(echo "$body" | sed 's/depends_on: pending/depends_on: #43,#44/')
+# 2. Replace depends_on ONLY within the agent-meta block (not in prose)
+new_body=$(python3 -c "
+import re, sys
+body = sys.stdin.read()
+body = re.sub(
+    r'(<!-- agent-meta.*?)depends_on: pending(.*?-->)',
+    r'\1depends_on: #43,#44\2',
+    body, flags=re.DOTALL
+)
+print(body)
+" <<< "$body")
 
 # 3. Update the issue
 gh issue edit <issue_num> --repo <repo> --body "$new_body"
 ```
+
+**Why not sed?** The issue body is Markdown with code blocks and prose that may contain `depends_on`. Targeting only the `<!-- agent-meta -->` block prevents accidental replacements.
 
 For issues with no dependencies, replace `pending` with an empty value:
 ```
@@ -250,3 +262,13 @@ After all issues are created and backfilled, output a JSON result block as your 
 8. **Keep task descriptions actionable.** A BUILD agent reading only the issue body (not the spec) should understand what to implement.
 9. **If `gh` commands fail with HTTP 403**, log the error and report it. Do not retry auth failures.
 10. **The JSON result block must be the last thing in your final message.** Blueprint parses it programmatically.
+11. **On retry after partial failure:** Before creating issues, check if task issues already exist for this plan (search for issues with `plan: #<plan_issue>` in the body). If all issues exist with `depends_on: pending`, skip Pass 1 entirely and run Pass 2 (backfill) only. If some issues exist, create only the missing ones, then run Pass 2 for all.
+12. **Failure recovery by error type:**
+    - **HTTP 403 (auth):** Do not retry. Report immediately.
+    - **HTTP 422 (validation):** Fix the issue body and retry once.
+    - **HTTP 429 (rate limit):** Wait 60 seconds and retry up to 3 times.
+    - **HTTP 500/502/503 (server):** Wait 30 seconds and retry up to 2 times.
+    - **Network timeout:** Retry once after 15 seconds.
+    - **`gh` CLI not found:** Report immediately — cannot proceed.
+    - After 3 consecutive failures of any type: STOP. Report all created issues + all failures in the JSON result block. Do not continue creating issues.
+13. **Validate wave ordering before posting plan:** No task in Wave N may depend on a task in Wave N+1 or later. If detected, re-order waves to satisfy all dependencies before posting the plan comment.
