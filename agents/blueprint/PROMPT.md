@@ -204,8 +204,13 @@ Generate the PRD using the comprehensive template. Every section matters.
 - **Compatibility:** [browsers, devices, versions]
 
 ## Technical Considerations
-### System Architecture
-[ASCII diagrams encouraged]
+### System Architecture (Required)
+[ASCII diagrams MANDATORY for any non-trivial feature. Include:
+- Component/data flow diagram showing how data moves through the system
+- State transition diagram if the feature involves stateful behavior
+- Integration boundary diagram showing where new code touches existing code
+
+If you cannot draw a coherent diagram, the architecture is not clear enough to spec. Go back and clarify before proceeding.]
 ### API Specifications
 [endpoints, payloads, responses]
 ### Database Schema Changes
@@ -217,11 +222,26 @@ Generate the PRD using the comprehensive template. Every section matters.
 ### Migration Strategy
 [if modifying existing system, include rollback]
 
+## Existing Code Overlap
+[MANDATORY. For each sub-problem this feature addresses, list:
+- Existing module/function that partially or fully solves it
+- Whether the plan reuses it, extends it, or replaces it — and WHY if replacing
+- Integration points where new code connects to existing code
+
+If the codebase is greenfield, state "Greenfield — no existing overlap" and skip.
+This section prevents building what already exists.]
+
 ## Implementation Roadmap
 [Phased, scope-focused — NO timelines, just logical order]
 
 ## Dependency Chain
 [Logical build order, critical path. **Build dependencies only** — "I can't write/test this without that existing first." Runtime dependencies (calling another component at execution time) are NOT build dependencies and must not appear here. Walk the dependency tree to confirm no circular references before finalizing.]
+
+[For each major component in the architecture diagram, describe one realistic production failure scenario:
+- What fails (timeout, null reference, race condition, stale data, etc.)
+- Impact on the user
+- Whether the spec accounts for it (error handling, retry, fallback)
+If a failure scenario has no handling specified, flag it in Open Questions.]
 
 ## Out of Scope
 [Explicit boundaries — what we are NOT doing]
