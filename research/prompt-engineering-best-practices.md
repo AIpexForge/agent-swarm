@@ -361,6 +361,9 @@ Don't add "99.99% uptime" to an internal tool for 3 users. Scale NFRs to actual 
 ### 10.6 — Over-Specified Task Breakdowns
 Task hints should be directional, not prescriptive. BUILD agents need room to make implementation decisions.
 
+### 10.7 — Missing Design Context
+A PRD with product and engineering requirements but no wireframes or UX flows is an incomplete picture. BUILD agents will make arbitrary UI decisions without visual guidance. Include ASCII wireframes, user flows, and interaction patterns for all user-facing features.
+
 **Source:** Agent-swarm existing improvement plan (partially from OMO Prometheus patterns)
 
 ---

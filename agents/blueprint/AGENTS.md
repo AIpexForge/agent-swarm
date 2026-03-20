@@ -74,10 +74,11 @@ Conduct a conversational interview. Batch questions in rounds — never dump all
 
 *Only ask questions you couldn't answer from the codebase scan.*
 
-### Round 3 — Success & Scope
+### Round 3 — Success, Scope & Design
 7. **How do we measure success?** (push for quantifiable metrics: baseline → target)
 8. **What's explicitly out of scope?**
-9. **Edge cases, risks, anything else?**
+9. **Any UX requirements?** (existing design system, component library, key interaction patterns, accessibility level) *If this is a non-UI feature (CLI tool, background job, API-only), note "N/A — not user-facing" and skip wireframes in the PRD.*
+10. **Edge cases, risks, anything else?**
 
 ### Interview Rules
 - Be conversational, not robotic. You're having a planning discussion, not filling a form.
@@ -249,6 +250,34 @@ Generate the PRD using the comprehensive template. Every section matters.
 - **Accessibility:** [standards]
 - **Compatibility:** [browsers, devices, versions]
 
+## Design & UX
+
+### Wireframes
+[ASCII or text-based wireframes for each key screen/view. Show layout, component placement, and information hierarchy. One wireframe per user-facing state change.]
+
+Example format:
+┌─────────────────────────────────┐
+│  Header / Nav                   │
+├──────────┬──────────────────────┤
+│ Sidebar  │  Main Content Area   │
+│          │  ┌────────────────┐  │
+│  • Nav 1 │  │  Card / Widget │  │
+│  • Nav 2 │  └────────────────┘  │
+│          │  [Action Button]     │
+└──────────┴──────────────────────┘
+
+### User Flows
+[Step-by-step interaction flows for primary user stories. Show: entry point → user action → system response → next state. Reference US-NNN.]
+
+### Interaction Patterns
+- **Loading states:** [skeleton, spinner, progressive — be specific]
+- **Error states:** [inline validation, toast, error page — per context]
+- **Empty states:** [what the user sees before data exists]
+- **Responsive behavior:** [breakpoints, layout changes, or "N/A — not user-facing"]
+
+### UI/UX Constraints
+[Existing design system, component library, brand guidelines, accessibility standards (WCAG level), or "Greenfield — establish conventions in this feature"]
+
 ## Technical Considerations
 ### System Architecture
 [ASCII diagrams encouraged]
@@ -356,14 +385,15 @@ After generating the PRD, spawn a **validation sub-agent** that runs 13 automate
 | 11 | Out of scope is defined | 5 |
 | 12 | testStrategy present on all P0 requirements | 5 |
 | 13 | Task breakdown hints included | 5 |
+| 14 | Design & UX section present with wireframes (skip for non-UI features) | 5 |
 
-**Total: 65 points**
+**Total: 70 points** (65 if non-UI feature — check 14 is N/A)
 
 **Grading:**
-- EXCELLENT: 91%+ (59+/65)
-- GOOD: 83-90% (54-58/65)
-- ACCEPTABLE: 75-82% (49-53/65)
-- NEEDS_WORK: <75% (<49/65)
+- EXCELLENT: 91%+ (64+/70 or 59+/65)
+- GOOD: 83-90% (58-63/70 or 54-58/65)
+- ACCEPTABLE: 75-82% (53-57/70 or 49-53/65)
+- NEEDS_WORK: <75% (<53/70 or <49/65)
 
 **Vague language detection:** Flag words like "fast", "easy", "secure", "scalable", "user-friendly" when used without quantification.
 
