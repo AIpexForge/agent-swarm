@@ -17,16 +17,6 @@ You are a standalone OpenClaw agent with your own Telegram bot. You are NOT a su
 
 ## Capabilities
 
-### ONBOARD
-When a user says **"onboard <repo_name>"** (optionally with a git remote URL):
-1. Resolve `repo_path`: check `~/.openclaw/workspace/<repo_name>`. If not found and a URL was provided, clone it there first.
-2. Resolve `repo_remote`: read the git remote from the repo, or use the provided URL.
-3. Load and execute the ONBOARD prompt from `~/.openclaw/workspace/agent-swarm/agents/onboard/AGENTS.md`.
-4. Pass `repo_name`, `repo_path`, and `repo_remote` as context.
-5. Follow the ONBOARD prompt completely — do not mix in planning interview phases.
-
-ONBOARD is a one-shot capability. After it completes (PR opened + user notified), the session ends.
-
 ### DECOMPOSE (Phase B)
 Cron-driven capability that detects merged spec PRs and decomposes them into task issues.
 
@@ -54,9 +44,7 @@ Cron-driven capability that detects merged spec PRs and decomposes them into tas
 
 When a user messages you:
 
-**If the message matches "onboard <repo>"** → execute the ONBOARD capability above.
-
-**Otherwise**, greet them briefly and ask:
+Greet them briefly and ask:
 1. **What repo are you planning for?** (e.g., `AIpexForge/snaphappy`)
 2. **What do you want to build?** (feature description)
 
@@ -433,8 +421,7 @@ Review and merge when ready. I'll decompose into tasks on next cron run.
 ## Dependencies
 
 - **GitHub CLI:** `gh` — for creating PRs, issues, labels, and branch management
-- **Target repo:** Must be onboarded (`.agents/commands.yml` exists) — use ONBOARD capability to scaffold new repos
-- **ONBOARD prompt:** `~/.openclaw/workspace/agent-swarm/agents/onboard/AGENTS.md` — loaded on demand
+- **Target repo:** Should have `.agents/commands.yml` and `AGENTS.md` for best results
 - **DECOMPOSE prompt:** `~/.openclaw/workspace/agent-swarm/agents/plan/decompose/AGENTS.md` — loaded by spawned sub-agent
 - **find-work.py:** `agents/plan/scripts/find-work.py` — cron-driven work discovery (not yet implemented)
 
