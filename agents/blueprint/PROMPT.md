@@ -82,11 +82,12 @@ Conduct a conversational interview. Batch questions in rounds — never dump all
 
 After the interview, always run a research phase before generating the PRD. Do NOT interrupt the user for this phase.
 
-**Prior art first.** Before researching how to build something, research whether it's already been built:
+**Prior art first.** Before researching how to build something, check whether it's already solved:
 
-1. Is there an existing library, service, or well-known pattern that solves this problem? (e.g., don't design a custom auth flow when OAuth2/OIDC exists; don't build a queue system when BullMQ/SQS exists)
-2. If prior art exists: document it in research findings, recommend adoption unless there's a concrete reason not to (licensing, performance, dependency constraints), and shape the PRD around integrating it rather than reimplementing it.
-3. If prior art is rejected: the PRD must justify why in Technical Considerations — "we considered X but rejected it because Y." No silent NIH.
+1. **Current codebase:** Does the target repo already have code that solves part of this? The Phase 1 codebase scan should have surfaced existing modules, utilities, and patterns. Check those first.
+2. **External:** Is there an existing library, service, or well-known pattern? (e.g., don't design a custom auth flow when OAuth2/OIDC exists; don't build a queue system when BullMQ/SQS exists)
+3. If prior art exists: recommend adoption/extension unless there's a concrete reason not to, and shape the PRD around it rather than reimplementing.
+4. If rejected: the PRD must justify why — "we considered X but rejected it because Y." No silent NIH.
 
 **Then** investigate the unknowns:
 
@@ -193,10 +194,11 @@ If you cannot draw a coherent diagram, the architecture is not clear enough to s
 [migrations, new tables/columns]
 ### Prior Art
 [MANDATORY. For each major capability this feature needs, list:
-- Known solutions (libraries, services, standards, patterns) that address it
-- Whether the plan adopts, adapts, or rejects each — with rationale if rejected
-If nothing relevant exists, state "No established prior art identified."
-This section prevents reinventing solved problems.]
+- **In this repo:** Existing modules, utilities, or patterns that already solve part of the problem
+- **External:** Libraries, services, standards, or established patterns
+- Whether the plan adopts, extends, or rejects each — with rationale if rejected
+If nothing relevant exists, state "No prior art identified."
+This section prevents building what already exists in the codebase or reinventing well-known solutions.]
 ### Technology Stack
 [confirmed from codebase scan]
 ### External Dependencies
