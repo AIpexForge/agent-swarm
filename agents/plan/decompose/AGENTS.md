@@ -85,20 +85,20 @@ gh issue comment <plan_issue> --repo <repo> --body '<PLAN_COMMENT>'
 ### Execution Waves
 
 > Tasks grouped by parallel execution potential. Each wave completes before the next begins.
+> Adapt the format below to your actual tasks — this is an example structure:
 
 **Wave 1** (Start Immediately — no dependencies):
-- Task 1: <title> (small)
-- Task 3: <title> (medium)
+- Task 1: <title> (<size>)
+- Task N: <title> (<size>)
 
 **Wave 2** (After Wave 1):
-- Task 2: <title> → depends on Task 1 (medium)
-- Task 4: <title> → depends on Task 3 (small)
+- Task N: <title> → depends on Task N (<size>)
 
 **Wave 3** (After Wave 2):
-- Task 5: <title> → depends on Tasks 2, 4 (medium)
+- Task N: <title> → depends on Tasks N, N (<size>)
 
-Critical Path: Task 1 → Task 2 → Task 5
-Max Parallel: 2 (Waves 1 & 2)
+Critical Path: <identify the longest chain>
+Max Parallel: <max concurrent tasks in any wave>
 
 ### Notes
 - <any sizing rationale, assumptions, or concerns>

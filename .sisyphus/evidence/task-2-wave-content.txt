@@ -1,0 +1,6 @@
+7. **Group tasks into parallel execution waves.** Foundation tasks with no dependencies form Wave 1. Tasks depending only on Wave 1 tasks form Wave 2. Continue until all tasks are placed. This helps BUILD agents identify which tasks can run simultaneously.
+### Execution Waves
+**Wave 1** (Start Immediately — no dependencies):
+**Wave 2** (After Wave 1):
+Critical Path: Task 1 → Task 2 → Task 5
+Max Parallel: 2 (Waves 1 & 2)

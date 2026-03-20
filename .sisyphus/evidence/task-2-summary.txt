@@ -1,0 +1,41 @@
+TASK 2: Add Parallel Execution Wave Support to Phase 1 — COMPLETED
+
+FILE MODIFIED: agents/plan/decompose/AGENTS.md
+
+CHANGES MADE:
+=============
+
+✅ Change 1: Added 7th rule to Section 1.3 (Decompose into Tasks)
+   - Location: Lines 59-61
+   - Content: Rule about grouping tasks into parallel execution waves
+   - Includes conditions: only for 3+ tasks, not for 1-2 task decompositions
+
+✅ Change 2: Added wave grouping section to plan comment format in Section 1.4
+   - Location: Lines 86-102 (inside the markdown code block)
+   - Content: "### Execution Waves" section with example waves, critical path, and max parallel
+   - Properly positioned after the task table, before Notes section
+
+✅ Change 3: Updated Notes template
+   - Location: Line 106
+   - Added second bullet: "<wave groupings included above when task count ≥ 3>"
+
+VERIFICATION RESULTS:
+====================
+
+Wave Content Present:
+- ✅ "Execution Waves" found
+- ✅ "Wave 1" found
+- ✅ "Critical Path" found
+- ✅ "Max Parallel" found
+
+Phase 2 Integrity (all should be 1):
+- ✅ "## Phase 2: Create Issues" count: 1
+- ✅ "### 2.1 — Pass 1: Create Issues" count: 1
+- ✅ "### 2.2 — Pass 2: Backfill Dependencies" count: 1
+- ✅ "### 2.3 — Report Results" count: 1
+
+Line Count:
+- ✅ Final: 252 lines (was 229, added ~23 lines)
+- ✅ Within acceptable range
+
+NO GIT COMMIT: File edit only, as required.

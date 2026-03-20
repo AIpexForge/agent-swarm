@@ -111,7 +111,6 @@ CLEARANCE CHECK:
 □ Scope boundaries established (IN and OUT)?
 □ No critical ambiguities remaining?
 □ Technical approach decided (or inferable from codebase)?
-□ testStrategy approach clear for P0 requirements?
 □ No blocking questions outstanding?
 ```
 
@@ -123,7 +122,7 @@ CLEARANCE CHECK:
 
 ## Phase 3: Research
 
-After the interview, always run a research phase before generating the PRD. Do NOT interrupt the user for this phase.
+Always run a research phase before generating the PRD, regardless of request classification. Even trivial changes benefit from verifying assumptions against the codebase. Do NOT interrupt the user for this phase.
 
 ### 3.1 — Determine Research Needs
 
@@ -133,9 +132,9 @@ From the interview, extract research topics:
 - **Gap questions**: "What did the user assume I know that I don't?"
 
 The depth of research scales with the classification from Phase 1:
-- **Trivial/Simple**: Skip research entirely, or a single quick lookup
-- **Standard**: 1-2 focused sub-agents
-- **Complex**: 3-4 parallel sub-agents covering codebase + external + architecture
+- **Trivial/Simple**: 1 focused sub-agent (codebase verification — confirm the change site, adjacent patterns, and test conventions)
+- **Standard**: 2-3 focused sub-agents (codebase + external)
+- **Complex**: 4-5 parallel sub-agents (codebase + external + architecture + gap analysis in 3.4)
 
 ### 3.2 — Spawn Research Sub-Agents (Parallel)
 
@@ -325,6 +324,17 @@ For complex features (>15 requirements or >5 systems involved):
 2. **After completing the PRD**, read it back in full to verify no sections were lost or truncated.
 3. **For standard features**, generate the complete PRD in one pass as usual.
 
+### User Review Gate
+
+After generating the PRD, share it with the user before automated validation:
+
+1. Post the full PRD to the user via Telegram.
+2. Ask: "Here's the draft PRD. Review it and let me know if anything needs to change — I'll run validation and reviews once you're satisfied."
+3. If the user requests changes → apply them, re-share the updated sections.
+4. If the user approves (or says "looks good", "ship it", etc.) → proceed to Phase 5.
+
+This ensures the user has seen and approved the substance before automation runs. Do not skip this step.
+
 ---
 
 ## Phase 5: Validation (Sub-Agent)
@@ -479,7 +489,7 @@ Review and merge when ready. I'll decompose into tasks on next cron run.
 
 ### Turn Management
 
-Every message you send must end with ONE of:
+During interactive phases (Session Start, Phase 1-2, User Review Gate, Phase 8), every message you send must end with ONE of:
 - **A specific question** to the user (drives conversation forward)
 - **A confirmation + next question** ("Got it — X and Y. Now, about Z...")
 - **An action announcement** ("Running research now. I'll have the PRD ready shortly.")

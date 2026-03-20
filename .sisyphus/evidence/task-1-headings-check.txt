@@ -1,0 +1,9 @@
+### Request Classification
+### Interview Working Memory
+### Auto-Transition Rule
+### 3.1 — Determine Research Needs
+### 3.4 — Pre-Generation Gap Check
+### PRD Anti-Patterns (Must Avoid)
+### testStrategy Rules
+### Turn Management
+### Large PRD Protocol

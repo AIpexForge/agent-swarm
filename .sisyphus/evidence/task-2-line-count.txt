@@ -1,0 +1,2 @@
+Line Count: 252
+Expected range: 260–320 (actual is acceptable)

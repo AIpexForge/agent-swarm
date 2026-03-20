@@ -92,7 +92,13 @@ Read entry points and up to 5 files per major source directory:
 
 - **Entry points:** `src/index.*`, `src/main.*`, `src/app.*`, `app/page.*`, `main.*`, `cmd/*/main.go`, `lib/*.rb` (first file)
 - **Config files in source:** `src/config.*`, `config/*`, `settings.*`
-- **Test files:** Read 1-2 test files to understand test patterns, assertions, and test runner usage
+- **Test files:** Read 2-3 test files to understand:
+  - Test framework (Jest, Vitest, pytest, Go testing, etc.)
+  - File naming pattern (`*.test.ts`, `test_*.py`, `*_test.go`)
+  - Assertion style (`expect().toBe()`, `assert`, `t.Run()`)
+  - Setup/teardown patterns (beforeEach, fixtures, test helpers)
+  - Whether tests are unit, integration, or e2e (or a mix)
+  Record these findings for the `testing` section in `commands.yml` and the `Key Abstractions & Patterns` table in `AGENTS.md`.
 - **Database:** Migration files (first and last), ORM config, `prisma/schema.prisma`, `db/schema.rb`, `alembic.ini`
 
 ### Step 2.4 — Monorepo Detection
@@ -129,10 +135,18 @@ paths:
   source: <dir>
   tests: <dir or UNKNOWN>
   docs: <dir or UNKNOWN>
+testing:
+  framework: <detected test framework or UNKNOWN>
+  runner: <test runner command or UNKNOWN>
+  file_pattern: <glob pattern or UNKNOWN>
+  assertion_style: <assertion pattern or UNKNOWN>
+  location: <test directory or UNKNOWN>
+  ci: <CI workflow that runs tests or UNKNOWN>
 conventions:
   code_style: <linter/formatter>
   commit_format: <conventional commits, etc. or UNKNOWN>
   branching: <strategy or UNKNOWN>
+patterns: [<list of {concern, pattern, location} detected from source scan>]
 unknowns: [<list of fields that could not be determined>]
 ```
 
@@ -205,6 +219,14 @@ paths:
   source: <dir>/   # primary source directory
   tests: <dir>/    # test file location
   docs: <dir>/     # documentation directory
+
+testing:
+  framework: <framework>        # from <source> (e.g., vitest, jest, pytest, go test)
+  runner: <runner>               # from <source> (e.g., vitest, jest, pytest, cargo test)
+  file_pattern: "<glob>"         # from scanned test files (e.g., "**/*.test.ts", "test_*.py")
+  assertion_style: <style>       # from sample test (e.g., expect/toBe, assert, t.Run)
+  location: <dir>/               # from directory scan
+  ci: <workflow_path>            # CI config that runs tests (e.g., .github/workflows/test.yml)
 ```
 
 **If `RE_ONBOARD=true`:** Apply merge strategy:
@@ -241,6 +263,23 @@ Generate a comprehensive context file:
 |------|---------|
 | `src/` | Primary source code |
 | `...` | ... |
+
+### Key Abstractions & Patterns
+[MANDATORY. For each common concern the codebase handles, document the pattern and location.
+This table is used by reviewer sub-agents to detect duplication and pattern conflicts during planning.]
+
+| Concern | Pattern | Location | Notes |
+|---------|---------|----------|-------|
+| Auth | [e.g., JWT middleware] | [e.g., src/middleware/auth.ts] | |
+| Validation | [e.g., Zod schemas] | [e.g., src/validators/] | |
+| Error handling | [e.g., Custom error class] | [e.g., src/lib/errors.ts] | |
+| Database access | [e.g., Prisma ORM] | [e.g., prisma/schema.prisma] | |
+| Events/messaging | [e.g., EventEmitter] | [e.g., src/events/] | |
+| Logging | [e.g., Winston/Pino] | [e.g., src/lib/logger.ts] | |
+| Config/env | [e.g., dotenv + typed config] | [e.g., src/config.ts] | |
+
+Remove rows that don't apply. Add rows for patterns specific to this codebase.
+If the project is too small to have established patterns, state: "Early-stage — no established patterns yet."
 
 ## Conventions
 - **Code Style:** <linter/formatter + config file>
