@@ -32,9 +32,9 @@ If the user provides repo + problem up front, skip straight to Phase 1.
 
 ---
 
-## Phase 0: Working Plan File
+## Phase 0: Working Plan File (PRD Draft)
 
-After receiving the problem statement (and before scanning), create a working plan file:
+After receiving the problem statement (and before scanning), create the working plan file. **This file IS the PRD draft** — you refine it throughout the session and eventually submit it as the spec PR.
 
 ```
 ~/.openclaw/workspace-blueprint/plans/[repo-name]-[feature-slug].md
@@ -63,7 +63,7 @@ Initialize it with:
 [key decisions made during planning, with rationale]
 ```
 
-**Update this file throughout the session.** It is your working memory — edit it as you learn, don't rely on conversation recall. Every sub-agent receives the current state of this file as context.
+**Update this file throughout the session.** It is your working memory — edit it as you learn, don't rely on conversation recall. Every sub-agent receives the current state of this file as context. By Phase 4, this file evolves into the full PRD using the template structure.
 
 ---
 
@@ -138,19 +138,23 @@ Then ask only what the scan couldn't answer:
 
 After the interview, always run a research phase before generating the PRD. Do NOT interrupt the user for this phase.
 
-**Prior art first.** Before researching how to build something, check whether it's already solved:
+### 3a — Prior Art Check
+
+Before researching how to build something, check whether it's already solved:
 
 1. **Current codebase:** Does the target repo already have code that solves part of this? The Phase 1 codebase scan should have surfaced existing modules, utilities, and patterns. Check those first.
 2. **External:** Is there an existing library, service, or well-known pattern? (e.g., don't design a custom auth flow when OAuth2/OIDC exists; don't build a queue system when BullMQ/SQS exists)
 3. If prior art exists: recommend adoption/extension unless there's a concrete reason not to, and shape the PRD around it rather than reimplementing.
 4. If rejected: the PRD must justify why — "we considered X but rejected it because Y." No silent NIH.
 
-**Then** investigate the unknowns:
+### 3b — Technical Research
 
-4. Spawn research sub-agents (parallel) to investigate unfamiliar technologies, APIs, and integration patterns
-5. Cross-reference the codebase scan with the feature requirements — identify gaps in your understanding
-6. Research external APIs, libraries, or services referenced in the interview
-7. Results feed into the PRD's Technical Considerations section
+Investigate the unknowns surfaced by the scan and interview:
+
+5. Spawn research sub-agents (parallel) to investigate unfamiliar technologies, APIs, and integration patterns
+6. Cross-reference the codebase scan with the feature requirements — identify gaps in your understanding
+7. Research external APIs, libraries, or services referenced in the interview
+8. Results feed into the PRD's Technical Considerations section
 
 The depth of research scales with complexity — a simple CRUD feature gets a light pass, a new integration with an unfamiliar API gets a deep dive.
 
@@ -310,47 +314,47 @@ If a failure scenario has no handling specified, flag it in Open Questions.]
 
 ---
 
-## Phase 5: Validation (Sub-Agent)
+## Phase 5: Review (6 Parallel Agents)
 
-Read the validation prompt from `~/.openclaw/workspace/agent-swarm/agents/validators/quality-check/PROMPT.md`.
+Spawn 6 review sub-agents in parallel. Each runs in a fresh session and detects a specific class of failure. All run on `anthropic/claude-sonnet-4-6` with 90s timeout.
 
-Spawn: `sessions_spawn(task=<prompt + full PRD + working plan file>, label="validation", model="anthropic/claude-sonnet-4-6", runTimeoutSeconds=90)`
+### Agent Roster
 
-The validator scores the PRD (15 checks, 75 points) and runs a scope challenge (compound requirements, file impact, priority consistency, failure scenario coverage).
-
-**Decision logic:**
-- Grade ≥ ACCEPTABLE (75%+) → proceed to Phase 6
-- Grade < ACCEPTABLE → auto-fix what you can (split compound requirements, adjust priorities, add missing sections), re-spawn validation (max 1 retry)
-- Still < ACCEPTABLE after retry → flag remaining issues to the user and ask whether to proceed or revise
-
----
-
-## Phase 6: Sub-Agent Review (5 Targeted Detectors)
-
-After validation passes (≥ ACCEPTABLE), spawn 5 review sub-agents in parallel. Each runs in a fresh session and detects a specific class of failure.
-
-### Sub-Agent Templates
-
-| Label | Prompt File | Detects |
-|-------|-------------|---------|
-| `contradiction` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/contradiction-detector/PROMPT.md` | Internal inconsistencies, naming drift, document ↔ requirements mismatch |
-| `architecture` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/architecture-auditor/PROMPT.md` | Bad design, unhandled failure modes, bottlenecks |
-| `integration` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/integration-auditor/PROMPT.md` | Codebase conflicts, duplicated modules, phantom references |
-| `testability` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/testability-auditor/PROMPT.md` | Vague testStrategies — attempts to draft test code as proof |
-| `coherence` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/coherence-auditor/PROMPT.md` | Cognitive dissonance — plan says one thing, requirements do another |
-
-All run on `anthropic/claude-sonnet-4-6` with 90s timeout.
+| Label | Prompt File | Detects | Context |
+|-------|-------------|---------|---------|
+| `contradiction` | `agents/reviewers/contradiction-detector/PROMPT.md` | Internal inconsistencies, naming drift, document ↔ requirements mismatch | PRD + plan file only |
+| `architecture` | `agents/reviewers/architecture-auditor/PROMPT.md` | Bad design, unhandled failure modes, bottlenecks | PRD + plan file + directory tree + stack info from commands.yml |
+| `integration` | `agents/reviewers/integration-auditor/PROMPT.md` | Codebase conflicts, duplicated modules, phantom references | PRD + plan file + directory tree (3+ levels) + key module definitions + public interfaces + router/API definitions + schema files + existing patterns + package manifest |
+| `testability` | `agents/reviewers/testability-auditor/PROMPT.md` | Vague testStrategies — attempts to draft test code as proof | PRD + plan file + existing test files listing + sample patterns + test framework + CI config + test_cmd |
+| `coherence` | `agents/reviewers/coherence-auditor/PROMPT.md` | Cognitive dissonance — plan says one thing, requirements do another | PRD + plan file only |
+| `validator` | `agents/validators/quality-check/PROMPT.md` | PRD quality score (15 checks, 75 pts) + scope challenge | PRD only |
 
 ### Spawn Pattern
 
-For each reviewer:
-1. Read the prompt file from the path above
-2. Assemble the task with: prompt + **full PRD** + **working plan file** + appropriate codebase context (see ORCHESTRATION.md)
+For each agent:
+1. Read the prompt file from the path above (relative to `~/.openclaw/workspace/agent-swarm/`)
+2. Assemble the task:
+   ```
+   <prompt file contents>
+
+   ---
+
+   ## PRD Under Review
+   <full PRD markdown>
+
+   ## Working Plan
+   <current contents of the working plan file>
+
+   ## Codebase Context
+   <appropriate context per agent type — see roster above>
+
+   Return your review as the structured JSON specified in your prompt.
+   ```
 3. Spawn: `sessions_spawn(task=<assembled>, label=<label>, model="anthropic/claude-sonnet-4-6", runTimeoutSeconds=90)`
 
-Every sub-agent gets the full PRD and working plan. Spawn all 5 in parallel.
+Spawn all 6 in parallel.
 
-### Review Aggregation
+### Review Output
 
 All reviewers return structured JSON with a normalized `issues[]` array:
 ```json
@@ -368,50 +372,79 @@ All reviewers return structured JSON with a normalized `issues[]` array:
 }
 ```
 
-**Decision logic:**
-- All pass → proceed to GitHub output
-- Any concerns (no criticals) → auto-incorporate suggestions, re-validate, proceed
-- Any critical → fix critical issues, re-run ONLY the failed reviewer (max 1 retry), then proceed or escalate to user
-- Timeout (no response in 90s) → treat as pass, note in handoff: "[Reviewer] timed out — manual review recommended"
+The validator returns a structured score:
+```json
+{
+  "score": 65,
+  "total": 75,
+  "percentage": 86.7,
+  "grade": "EXCELLENT | GOOD | ACCEPTABLE | NEEDS_WORK",
+  "checks": [...],
+  "vague_language": [...],
+  "scope_challenge": {...}
+}
+```
 
-See `~/.openclaw/workspace/agent-swarm/agents/reviewers/ORCHESTRATION.md` for full aggregation and auto-incorporation rules.
+### Decision Logic
+
+| Condition | Action |
+|-----------|--------|
+| All reviewers pass AND validator ≥ ACCEPTABLE (75%+) | → Proceed to Phase 6 |
+| Validator < ACCEPTABLE | → Treat as critical: auto-fix (split compound reqs, add missing sections, quantify vague language), re-run validator only (max 1 retry). Still failing → flag to user. |
+| Reviewer concerns (no criticals) | → Auto-incorporate suggestions, proceed |
+| Any reviewer critical | → Fix critical issues, re-run ONLY the failed reviewer (max 1 retry), then proceed or escalate to user |
+| Timeout (90s, any agent) | → Treat as pass, note in handoff: "[Agent] timed out — manual review recommended" |
+
+### Auto-Incorporation Rules
+
+After receiving results, apply fixes before proceeding:
+
+1. **Contradiction Detector:** Resolve contradictions using the reviewer's suggested side
+2. **Architecture Auditor:** Add unhandled failure scenarios to Open Questions; update diagram if needed
+3. **Integration Auditor:** Update "Existing Code Overlap"; fix phantom references; align patterns
+4. **Testability Auditor:** Replace testStrategy with `improved_strategy`; add draft test snippets to appendix
+5. **Coherence Auditor:** Realign requirements to match stated intent; flag disproportionate scope to user
+6. **Validator:** Fix failing checks — split compound requirements, add missing sections, quantify vague language
+
+After auto-incorporation, do NOT re-run all agents. Only re-run if criticals exist from a specific agent.
 
 ---
 
-## Phase 7: GitHub Output (Sub-Agent)
+## Phase 6: GitHub Output
 
-Spawn a sub-agent to create the GitHub artifacts:
+Blueprint handles this directly — no sub-agent needed.
 
-**PR on the target repo:**
-```
-PR: "plan: [feature-name]"
-Branch: plan/[feature-slug]
-Labels: plan:draft
-```
+### Create the PR
 
-**Files in PR:**
-```
-specs/FEAT-[feature-name].md    ← The PRD
-plans/PLAN-[feature-name].md    ← High-level plan summary (what/why, not how)
-```
+1. Create branch `plan/[feature-slug]` on the target repo
+2. Commit the PRD to `specs/FEAT-[feature-name].md`
+3. Create the PR:
+   ```bash
+   gh pr create --repo <org/repo> --base main --head plan/[feature-slug] \
+     --title "plan: [feature-name]" --label "plan:draft" \
+     --body "<PR description with executive summary>"
+   ```
 
-**Plan Issue:**
-```
-Title: "[PLAN] Feature Name"
-Labels: plan:draft
-Body:
-  - Executive summary
-  - Link to PR
-  - Validation score + grade
-  - Reviewer verdicts summary
-  - Task count estimate
+**The PR contains ONLY the PRD.** This is the human review gate.
+
+### Create the Plan Issue
+
+```bash
+gh issue create --repo <org/repo> \
+  --title "[PLAN] Feature Name" --label "plan:draft" \
+  --body "<issue body>"
 ```
 
-The sub-agent returns the PR URL and issue URL to Blueprint.
+Issue body includes:
+- Executive summary
+- Link to PR
+- Validation score + grade
+- Reviewer verdicts summary (which passed, which had concerns, issues addressed)
+- Task count estimate from appendix
 
 ---
 
-## Phase 8: Handoff
+## Phase 7: Handoff
 
 Blueprint messages the user with a summary:
 
@@ -420,24 +453,54 @@ Blueprint messages the user with a summary:
 
 • [N] functional requirements ([X] P0, [Y] P1, [Z] P2)
 • [N] user stories
-• [N] reviewers passed ([summary of issues addressed])
+• [N] review agents passed ([summary of issues addressed])
 • Estimated ~[N] tasks after decomposition
 
 PR: <link>
 Plan Issue: <link>
 
-Review and merge the PR. Want me to decompose it into task issues now, or after you've reviewed?
+Review the PRD in the PR. When you're satisfied, approve and merge — then say "decompose" and I'll break it into task issues.
 ```
 
-After sending the handoff, **wait for the user's response.** If they say yes (or merge and come back), proceed to decompose. Blueprint does NOT end the session at handoff — it stays alive to decompose.
+After sending the handoff, **wait for the user's response.** Blueprint stays alive for the feedback loop and decomposition.
 
-### Decompose
+---
 
-Triggered by user confirmation after handoff, or when user says "decompose" / "break it down" / "create tasks" / "generate issues" at any point:
+## Feedback Loop (between Phase 7 and Phase 8)
 
-1. Confirm the spec PR is merged. If not: "Merge the spec PR first, then I'll decompose."
+When the user provides feedback on the PRD — either via Telegram message or PR review comments:
+
+1. Incorporate the feedback into the PRD (update the working plan file)
+2. Re-run Phase 5 (all 6 review agents in parallel)
+3. Auto-incorporate review results
+4. Update the PR with the revised PRD:
+   ```bash
+   # Update the spec file on the plan branch and push
+   ```
+5. Send updated summary to the user:
+   ```
+   📐 PRD updated for [feature-name] — now scored [GRADE] ([score]%).
+
+   Changes:
+   • [summary of what changed based on feedback]
+   • [review results delta — new issues found/resolved]
+
+   PR updated: <link>
+   ```
+
+This loop continues until the user approves and merges the PR.
+
+---
+
+## Phase 8: Decompose
+
+**Only available after the spec PR is merged.** The decompose agent reads the PRD from the main branch — not the working plan file.
+
+Triggered when the user says "decompose" / "break it down" / "create tasks" / "generate issues" after merge. If triggered before merge: "Merge the spec PR first, then I'll decompose."
+
+1. Read the PRD from main: `specs/FEAT-[feature-name].md`
 2. Read the decompose prompt from `~/.openclaw/workspace/agent-swarm/agents/decompose/PROMPT.md`
-3. Assemble context: spec content, repo info, feature branch, plan issue number, AGENTS.md, commands.yml, directory listing
+3. Assemble context: spec content from main branch, repo info, feature branch, plan issue number, AGENTS.md, commands.yml, directory listing
 4. Spawn: `sessions_spawn(task=<prompt + context>, label="decompose", runTimeoutSeconds=600)`
 5. The sub-agent posts a decomposition plan comment on the plan issue, then waits for approval
 6. Review the proposed tasks: classify sizes (small/medium/large), split tasks >60 min, merge tightly-coupled <10 min tasks
@@ -465,7 +528,8 @@ Triggered by user confirmation after handoff, or when user says "decompose" / "b
 
 - **GitHub CLI:** `gh` — for creating PRs, issues, labels, and branch management
 - **Target repo:** Should have `.agents/commands.yml` and `AGENTS.md` for best results
-- **Decompose prompt:** `~/.openclaw/workspace/agent-swarm/agents/decompose/PROMPT.md` — spawned on user request after spec PR merge
+- **Review agent prompts:** `agents/reviewers/*/PROMPT.md` and `agents/validators/quality-check/PROMPT.md`
+- **Decompose prompt:** `agents/decompose/PROMPT.md` — spawned on user request after spec PR merge
 
 ---
 
