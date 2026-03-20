@@ -254,48 +254,16 @@ If a failure scenario has no handling specified, flag it in Open Questions.]
 
 ## Phase 5: Validation (Sub-Agent)
 
-After generating the PRD, spawn a **validation sub-agent** that runs 15 automated quality checks plus a scope challenge.
+Read the validation prompt from `~/.openclaw/workspace/agent-swarm/agents/validators/quality-check/PROMPT.md`.
 
-### Quality Checks (15 Checks)
+Spawn: `sessions_spawn(task=<prompt + full PRD>, label="validation", model="anthropic/claude-sonnet-4-6", runTimeoutSeconds=90)`
 
-| # | Check | Category | Points |
-|---|-------|----------|--------|
-| 1 | Executive summary exists (20-500 words) | Required | 5 |
-| 2 | Problem statement includes user impact | Required | 5 |
-| 3 | Problem statement includes business impact | Required | 5 |
-| 4 | Goals have SMART metrics | Required | 5 |
-| 5 | User stories have acceptance criteria (min 3 each) | Required | 5 |
-| 6 | Functional requirements are testable (no vague language) | Required | 5 |
-| 7 | Requirements have priority labels (P0/P1/P2) | Required | 5 |
-| 8 | Requirements are numbered (REQ-NNN) | Required | 5 |
-| 9 | Technical considerations address architecture | Required | 5 |
-| 10 | Dependencies mapped, no circular refs, build-only (no runtime deps) | Required | 5 |
-| 11 | Out of scope is defined | Completeness | 5 |
-| 12 | testStrategy present on all P0 requirements | Quality | 5 |
-| 13 | Task breakdown hints included | Taskmaster | 5 |
-| 14 | Architecture diagrams exist and are non-trivial (not just boxes and arrows) | Quality | 5 |
-| 15 | "Existing Code Overlap" section populated (or marked greenfield) | Quality | 5 |
+The validator scores the PRD (15 checks, 75 points) and runs a scope challenge (compound requirements, file impact, priority consistency, failure scenario coverage).
 
-**Total: 75 points**
-
-**Grading:**
-- **EXCELLENT:** 91%+ (69+/75)
-- **GOOD:** 83-90% (63-68/75)
-- **ACCEPTABLE:** 75-82% (57-62/75)
-- **NEEDS_WORK:** <75% (<57/75)
-
-**Vague language detection:** Flag words like "fast", "easy", "secure", "scalable", "user-friendly" when used without quantification.
-
-### Scope Challenge
-
-The validation sub-agent also performs a scope challenge:
-
-1. **Compound requirement detection:** Does any single requirement hide 3+ subtasks? If so, flag for splitting.
-2. **File impact estimate:** Would any requirement touch >8 files? Flag as complexity smell.
-3. **Priority consistency:** Is any P0 dependent on a P1 or P2? Flag — dependencies of P0s must also be P0.
-4. **Failure scenario coverage:** Does every major component in the architecture diagram have a failure scenario? Flag gaps.
-
-Scope challenge issues are returned alongside the quality score. Blueprint auto-fixes what it can (split compound requirements, adjust priorities) and re-validates (max 1 retry). Remaining issues are flagged to the user.
+**Decision logic:**
+- Grade ≥ ACCEPTABLE (75%+) → proceed to Phase 6
+- Grade < ACCEPTABLE → auto-fix what you can (split compound requirements, adjust priorities, add missing sections), re-spawn validation (max 1 retry)
+- Still < ACCEPTABLE after retry → flag remaining issues to the user and ask whether to proceed or revise
 
 ---
 
