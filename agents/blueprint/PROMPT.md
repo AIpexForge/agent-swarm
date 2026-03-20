@@ -68,17 +68,11 @@ If the user provides both up front, skip straight to Phase 1.
 
 Before asking any interview questions:
 1. Check if the target repo is already cloned in `~/.openclaw/workspace/`. If not, clone it.
-2. Read `.agents/commands.yml` for:
-   - Stack info (build_cmd, test_cmd, dev_cmd, port, stack)
-   - **`testing` section** — framework, runner, file pattern, assertion style, CI workflow
+2. Read `.agents/commands.yml` for stack info (build_cmd, test_cmd, dev_cmd, port, stack)
 3. Scan codebase structure: directory layout, key files, frameworks, dependencies
-4. Read `AGENTS.md` for:
-   - Project conventions and context
-   - **`Key Abstractions & Patterns` table** — existing patterns for auth, validation, error handling, etc. (used later by Integration Auditor)
+4. Read `AGENTS.md` for project conventions and context
 5. Read existing `specs/` and `plans/` for prior context
 6. Pre-fill answers you can infer (tech stack, existing patterns, integration points)
-
-If `.agents/commands.yml` or `AGENTS.md` doesn't exist, the repo hasn't been onboarded. Prompt the user: "This repo hasn't been onboarded yet. Want me to onboard it first?"
 
 This reduces the interview to only what you can't determine from code.
 
