@@ -157,6 +157,7 @@ Generate the PRD using the comprehensive template. Every section matters.
   1. [criterion]
   2. [criterion]
   3. [criterion]
+- **Happy Path:** [end-to-end user flow crossing requirement boundaries — entry point → steps → expected final state. Include which REQ-NNNs are touched at each step.]
 - **Task Hints:** [implementation steps with hour estimates]
 - **Dependencies:** [REQ-NNN cross-references]
 
@@ -249,6 +250,12 @@ If a failure scenario has no handling specified, flag it in Open Questions.]
 - testStrategy must be concrete enough for an autonomous TEST agent to validate
 - The TEST agent never sees BUILD's implementation approach — only the spec's testStrategy
 - Avoid vague verification: "check it works" ❌ → "Send POST /api/webhook with payload X, verify 200 response and database row created" ✅
+
+### End-to-End Coverage Rules
+- Every User Story that touches 2+ requirements MUST include a `happy_path` field describing the end-to-end flow
+- The happy path must specify: entry point, data flow across requirement boundaries, and expected final state
+- Example: "User signs up (REQ-001) → receives confirmation email (REQ-003) → clicks link → lands on dashboard (REQ-005) with welcome message"
+- These flows are what the Testability Auditor uses to draft e2e tests. If the flow isn't specified, the auditor can't verify integration.
 
 ---
 

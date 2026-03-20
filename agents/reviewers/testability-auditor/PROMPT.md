@@ -33,6 +33,17 @@ For each P0 requirement, **attempt to draft the test code** from the testStrateg
    - **PARTIALLY_TESTABLE:** You could write part of the test but some criteria are too vague. Specify which.
    - **UNTESTABLE:** You cannot write a meaningful test from this testStrategy. Explain why.
 
+### End-to-End Happy Path Coverage
+
+After reviewing individual requirements, evaluate whether the PRD defines testable happy-path flows that cross requirement boundaries:
+
+1. **Trace each User Story through its requirements.** Does US-001 touch REQ-001, REQ-003, and REQ-005? Can you write a single e2e test that walks through that user flow start to finish?
+2. **Identify boundary gaps.** Where does data leave one requirement's scope and enter another's? Is the handoff specified clearly enough to test? (e.g., REQ-001 creates data → REQ-003 displays it → REQ-005 lets the user act on it. Is the contract between them testable?)
+3. **Draft at least one e2e happy path test** that crosses 2+ requirements. If you can't, the spec has integration gaps — requirements work in isolation but there's no spec for the glue.
+4. **Flag user flows with no cross-requirement test coverage.** These are the flows where "all tests pass but the app doesn't work."
+
+Report these in `e2e_coverage` in the output.
+
 ### Also Check:
 - Are performance thresholds measurable? ("fast" ❌ → "< 200ms p95 under 100 concurrent requests" ✅)
 - Are edge cases specific enough to assert on?
@@ -52,6 +63,30 @@ For each P0 requirement, **attempt to draft the test code** from the testStrateg
       "improved_strategy": "Rewritten testStrategy that IS testable (if current is not)"
     }
   ],
+  "e2e_coverage": {
+    "happy_path_tests": [
+      {
+        "user_story": "US-NNN",
+        "requirements_crossed": ["REQ-001", "REQ-003", "REQ-005"],
+        "draft_test": "e2e test code that walks the full user flow",
+        "testable": true
+      }
+    ],
+    "boundary_gaps": [
+      {
+        "from": "REQ-001",
+        "to": "REQ-003",
+        "gap": "No spec for how data format from REQ-001 maps to REQ-003 input",
+        "impact": "Tests pass individually but integration breaks on data shape mismatch"
+      }
+    ],
+    "uncovered_flows": [
+      {
+        "user_story": "US-NNN",
+        "reason": "Requirements cover individual steps but no spec ties them together"
+      }
+    ]
+  },
   "hard_to_automate": [
     {
       "requirement": "REQ-NNN",
