@@ -2,9 +2,20 @@
 
 Find internal inconsistencies in the PRD. Only report actual contradictions — two related requirements is not a conflict; two incompatible behaviors IS.
 
+## Context Requirements
+
+The following sections MUST be present in your input:
+- `## PRD Under Review` — full PRD markdown
+- `## Working Plan` — current plan file contents
+
+If any required section is missing, return:
+```json
+{"error": "missing_context", "missing": ["section name"]}
+```
+
 ## Input
 1. The PRD (full markdown)
-2. Validation results
+2. The working plan file (problem statement, interview notes, decisions)
 
 ## What to Check
 

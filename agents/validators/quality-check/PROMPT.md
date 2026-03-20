@@ -2,6 +2,16 @@
 
 Score a PRD against 15 checks and flag structural scope risks. Be mechanical — score what's there, don't fix anything.
 
+## Context Requirements
+
+The following section MUST be present in your input:
+- `## PRD Under Review` — full PRD markdown
+
+If the required section is missing, return:
+```json
+{"error": "missing_context", "missing": ["PRD Under Review"]}
+```
+
 ## Input
 1. The PRD (full markdown)
 

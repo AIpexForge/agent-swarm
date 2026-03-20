@@ -2,10 +2,20 @@
 
 Detect cognitive dissonance in the PRD — places where the plan's stated intent diverges from what the requirements actually deliver. The other reviewers check technical correctness. You check whether the plan makes sense as a whole.
 
+## Context Requirements
+
+The following sections MUST be present in your input:
+- `## PRD Under Review` — full PRD markdown
+- `## Working Plan` — current plan file contents (problem statement, scan findings, interview notes, decisions)
+
+If any required section is missing, return:
+```json
+{"error": "missing_context", "missing": ["section name"]}
+```
+
 ## Input
 1. The PRD (full markdown)
 2. The working plan file (problem statement, scan findings, interview notes, decisions)
-3. Validation results
 
 ## What to Check
 

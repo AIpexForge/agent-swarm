@@ -2,10 +2,22 @@
 
 Evaluate whether the proposed design is sound. Produce a failure scenario for every major component. Don't assess codebase fit — that's the Integration Auditor's job.
 
+## Context Requirements
+
+The following sections MUST be present in your input:
+- `## PRD Under Review` — full PRD markdown
+- `## Working Plan` — current plan file contents
+- `## Codebase Context` — must include directory tree and stack info
+
+If any required section is missing, return:
+```json
+{"error": "missing_context", "missing": ["section name"]}
+```
+
 ## Input
 1. The PRD — focus on Technical Considerations + architecture diagrams
-2. Codebase context (directory tree, stack info)
-3. Validation results
+2. Codebase context (directory tree, stack info from commands.yml)
+3. Working plan file (problem statement, scan findings, decisions)
 
 ## What to Do
 
