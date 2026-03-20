@@ -32,18 +32,57 @@ If the user provides repo + problem up front, skip straight to Phase 1.
 
 ---
 
+## Phase 0: Working Plan File
+
+After receiving the problem statement (and before scanning), create a working plan file:
+
+```
+~/.openclaw/workspace-blueprint/plans/[repo-name]-[feature-slug].md
+```
+
+Initialize it with:
+```markdown
+# Planning: [Feature Name]
+**Repo:** [org/repo]
+**Started:** [date]
+**Status:** interview
+
+## Problem Statement
+[User's problem statement verbatim]
+
+## Scan Findings
+[populated after Phase 1]
+
+## Interview Notes
+[populated during Phase 2]
+
+## Research Findings
+[populated during Phase 3]
+
+## Decisions
+[key decisions made during planning, with rationale]
+```
+
+**Update this file throughout the session.** It is your working memory — edit it as you learn, don't rely on conversation recall. Every sub-agent receives the current state of this file as context.
+
+---
+
 ## Phase 1: Targeted Codebase Scan
 
 With the problem statement in hand, scan the repo with focus:
 
 1. Check if the target repo is already cloned in `~/.openclaw/workspace/`. If not, clone it.
 2. Read `.agents/commands.yml` for stack info and `AGENTS.md` for conventions
-3. Scan codebase structure — but prioritize areas relevant to the stated problem:
+3. Scan codebase structure — prioritize areas relevant to the stated problem:
    - Modules that touch the problem domain
    - Existing implementations that overlap with what the user described
    - Patterns the codebase uses for similar concerns
-4. Read existing `specs/` and `plans/` for prior context
-5. Build a list of **assumptions** you can infer from the code (tech stack, existing patterns, integration points, prior art in the repo)
+4. **Scan existing `specs/` and `plans/` for related work:**
+   - Plans that solve a similar, identical, complementary, or adjacent problem
+   - Specs that this plan could depend on, extend, or conflict with
+   - Any existing code implementations that were built from prior plans
+   - Document what you find in the working plan file under Scan Findings
+5. Build a list of **assumptions** from the code (tech stack, patterns, prior art, related plans)
 
 This scan is targeted, not exhaustive. The problem statement tells you where to look.
 
@@ -275,7 +314,7 @@ If a failure scenario has no handling specified, flag it in Open Questions.]
 
 Read the validation prompt from `~/.openclaw/workspace/agent-swarm/agents/validators/quality-check/PROMPT.md`.
 
-Spawn: `sessions_spawn(task=<prompt + full PRD>, label="validation", model="anthropic/claude-sonnet-4-6", runTimeoutSeconds=90)`
+Spawn: `sessions_spawn(task=<prompt + full PRD + working plan file>, label="validation", model="anthropic/claude-sonnet-4-6", runTimeoutSeconds=90)`
 
 The validator scores the PRD (15 checks, 75 points) and runs a scope challenge (compound requirements, file impact, priority consistency, failure scenario coverage).
 
@@ -286,9 +325,9 @@ The validator scores the PRD (15 checks, 75 points) and runs a scope challenge (
 
 ---
 
-## Phase 6: Sub-Agent Review (4 Targeted Detectors)
+## Phase 6: Sub-Agent Review (5 Targeted Detectors)
 
-After validation passes (≥ ACCEPTABLE), spawn 4 review sub-agents in parallel. Each runs in a fresh session and detects a specific class of failure.
+After validation passes (≥ ACCEPTABLE), spawn 5 review sub-agents in parallel. Each runs in a fresh session and detects a specific class of failure.
 
 ### Sub-Agent Templates
 
@@ -298,6 +337,7 @@ After validation passes (≥ ACCEPTABLE), spawn 4 review sub-agents in parallel.
 | `architecture` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/architecture-auditor/PROMPT.md` | Bad design, unhandled failure modes, bottlenecks |
 | `integration` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/integration-auditor/PROMPT.md` | Codebase conflicts, duplicated modules, phantom references |
 | `testability` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/testability-auditor/PROMPT.md` | Vague testStrategies — attempts to draft test code as proof |
+| `coherence` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/coherence-auditor/PROMPT.md` | Cognitive dissonance — plan says one thing, requirements do another |
 
 All run on `anthropic/claude-sonnet-4-6` with 90s timeout.
 
@@ -305,10 +345,10 @@ All run on `anthropic/claude-sonnet-4-6` with 90s timeout.
 
 For each reviewer:
 1. Read the prompt file from the path above
-2. Assemble the task with appropriate context (see ORCHESTRATION.md for per-reviewer context payloads)
+2. Assemble the task with: prompt + **full PRD** + **working plan file** + appropriate codebase context (see ORCHESTRATION.md)
 3. Spawn: `sessions_spawn(task=<assembled>, label=<label>, model="anthropic/claude-sonnet-4-6", runTimeoutSeconds=90)`
 
-Spawn all 4 in parallel. Do NOT wait for one before spawning the next.
+Every sub-agent gets the full PRD and working plan. Spawn all 5 in parallel.
 
 ### Review Aggregation
 
@@ -386,12 +426,14 @@ Blueprint messages the user with a summary:
 PR: <link>
 Plan Issue: <link>
 
-Review and merge the PR. When ready, say "decompose" and I'll break it into task issues for BUILD.
+Review and merge the PR. Want me to decompose it into task issues now, or after you've reviewed?
 ```
 
-### Decompose (on user request)
+After sending the handoff, **wait for the user's response.** If they say yes (or merge and come back), proceed to decompose. Blueprint does NOT end the session at handoff — it stays alive to decompose.
 
-When the user says **"decompose"** (or equivalent — "break it down", "create tasks", "generate issues"):
+### Decompose
+
+Triggered by user confirmation after handoff, or when user says "decompose" / "break it down" / "create tasks" / "generate issues" at any point:
 
 1. Confirm the spec PR is merged. If not: "Merge the spec PR first, then I'll decompose."
 2. Read the decompose prompt from `~/.openclaw/workspace/agent-swarm/agents/decompose/PROMPT.md`
@@ -403,7 +445,7 @@ When the user says **"decompose"** (or equivalent — "break it down", "create t
 8. Sub-agent creates issues and reports results
 9. Notify the user with task count and issue links
 
-**Blueprint session ends** after decomposition completes (or after handoff if user declines to decompose immediately).
+**Blueprint session ends** after decomposition completes, or when the user explicitly declines ("I'll review first", etc.).
 
 ---
 
