@@ -55,6 +55,9 @@ Break requirements into tasks following these rules:
    - `small` — <15 min agent time
    - `medium` — 15-30 min agent time
    - `large` — >30 min agent time (these MUST be split before issue creation)
+7. **Group tasks into parallel execution waves.** Foundation tasks with no dependencies form Wave 1. Tasks depending only on Wave 1 form Wave 2. Continue until all tasks are placed. This helps BUILD agents identify which tasks can run simultaneously.
+   - Only generate wave groupings when the decomposition produces 3 or more tasks.
+   - A single-task or two-task decomposition does not need wave structure.
 
 ### 1.4 — Post Decomposition Plan Comment
 
@@ -79,8 +82,27 @@ gh issue comment <plan_issue> --repo <repo> --body '<PLAN_COMMENT>'
 | 2 | <title>   | medium | Task 1   | `src/bar.ts`   |
 | ... | ...    | ...  | ...        | ...            |
 
+### Execution Waves
+
+> Tasks grouped by parallel execution potential. Each wave completes before the next begins.
+
+**Wave 1** (Start Immediately — no dependencies):
+- Task 1: <title> (small)
+- Task 3: <title> (medium)
+
+**Wave 2** (After Wave 1):
+- Task 2: <title> → depends on Task 1 (medium)
+- Task 4: <title> → depends on Task 3 (small)
+
+**Wave 3** (After Wave 2):
+- Task 5: <title> → depends on Tasks 2, 4 (medium)
+
+Critical Path: Task 1 → Task 2 → Task 5
+Max Parallel: 2 (Waves 1 & 2)
+
 ### Notes
 - <any sizing rationale, assumptions, or concerns>
+- Include wave groupings when task count ≥ 3
 ````
 
 ### 1.5 — STOP AND WAIT
