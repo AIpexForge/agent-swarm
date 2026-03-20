@@ -266,35 +266,48 @@ If a failure scenario has no handling specified, flag it in Open Questions.]
 
 ## Phase 5: Validation (Sub-Agent)
 
-After generating the PRD, spawn a **validation sub-agent** that runs 13 automated quality checks:
+After generating the PRD, spawn a **validation sub-agent** that runs 15 automated quality checks plus a scope challenge.
 
-| # | Check | Points |
-|---|-------|--------|
-| 1 | Executive summary exists (20-500 words) | 5 |
-| 2 | Problem statement includes user impact | 5 |
-| 3 | Problem statement includes business impact | 5 |
-| 4 | Goals have SMART metrics | 5 |
-| 5 | User stories have acceptance criteria (min 3 each) | 5 |
-| 6 | Functional requirements are testable (no vague language) | 5 |
-| 7 | Requirements have priority labels (P0/P1/P2) | 5 |
-| 8 | Requirements are numbered (REQ-NNN) | 5 |
-| 9 | Technical considerations address architecture | 5 |
-| 10 | Dependencies are mapped, have no circular references, and distinguish build vs runtime | 5 |
-| 11 | Out of scope is defined | 5 |
-| 12 | testStrategy present on all P0 requirements | 5 |
-| 13 | Task breakdown hints included | 5 |
+### Quality Checks (15 Checks)
 
-**Total: 65 points**
+| # | Check | Category | Points |
+|---|-------|----------|--------|
+| 1 | Executive summary exists (20-500 words) | Required | 5 |
+| 2 | Problem statement includes user impact | Required | 5 |
+| 3 | Problem statement includes business impact | Required | 5 |
+| 4 | Goals have SMART metrics | Required | 5 |
+| 5 | User stories have acceptance criteria (min 3 each) | Required | 5 |
+| 6 | Functional requirements are testable (no vague language) | Required | 5 |
+| 7 | Requirements have priority labels (P0/P1/P2) | Required | 5 |
+| 8 | Requirements are numbered (REQ-NNN) | Required | 5 |
+| 9 | Technical considerations address architecture | Required | 5 |
+| 10 | Dependencies mapped, no circular refs, build-only (no runtime deps) | Required | 5 |
+| 11 | Out of scope is defined | Completeness | 5 |
+| 12 | testStrategy present on all P0 requirements | Quality | 5 |
+| 13 | Task breakdown hints included | Taskmaster | 5 |
+| 14 | Architecture diagrams exist and are non-trivial (not just boxes and arrows) | Quality | 5 |
+| 15 | "Existing Code Overlap" section populated (or marked greenfield) | Quality | 5 |
+
+**Total: 75 points**
 
 **Grading:**
-- EXCELLENT: 91%+ (59+/65)
-- GOOD: 83-90% (54-58/65)
-- ACCEPTABLE: 75-82% (49-53/65)
-- NEEDS_WORK: <75% (<49/65)
+- **EXCELLENT:** 91%+ (69+/75)
+- **GOOD:** 83-90% (63-68/75)
+- **ACCEPTABLE:** 75-82% (57-62/75)
+- **NEEDS_WORK:** <75% (<57/75)
 
 **Vague language detection:** Flag words like "fast", "easy", "secure", "scalable", "user-friendly" when used without quantification.
 
-The validation sub-agent returns the score, grade, and list of issues. If grade < ACCEPTABLE, Blueprint auto-fixes what it can and re-submits for validation (max 1 retry). Remaining issues are flagged to the user.
+### Scope Challenge
+
+The validation sub-agent also performs a scope challenge:
+
+1. **Compound requirement detection:** Does any single requirement hide 3+ subtasks? If so, flag for splitting.
+2. **File impact estimate:** Would any requirement touch >8 files? Flag as complexity smell.
+3. **Priority consistency:** Is any P0 dependent on a P1 or P2? Flag — dependencies of P0s must also be P0.
+4. **Failure scenario coverage:** Does every major component in the architecture diagram have a failure scenario? Flag gaps.
+
+Scope challenge issues are returned alongside the quality score. Blueprint auto-fixes what it can (split compound requirements, adjust priorities) and re-validates (max 1 retry). Remaining issues are flagged to the user.
 
 ---
 
