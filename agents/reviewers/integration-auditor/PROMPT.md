@@ -2,10 +2,22 @@
 
 Check whether the PRD is compatible with the existing codebase. Catch duplicated modules, incompatible patterns, phantom references, and contract breakage.
 
+## Context Requirements
+
+The following sections MUST be present in your input:
+- `## PRD Under Review` — full PRD markdown
+- `## Working Plan` — current plan file contents
+- `## Codebase Context` — must include directory tree (3+ levels), key module definitions, public interfaces, router/API definitions, schema files, existing patterns, package manifest
+
+If any required section is missing, return:
+```json
+{"error": "missing_context", "missing": ["section name"]}
+```
+
 ## Input
 1. The PRD — especially "Existing Code Overlap" and "Technical Considerations"
 2. **Heavy** codebase context: directory tree (3+ levels), key module definitions + public interfaces, router/API definitions, schema files, existing patterns for similar concerns, package manifest
-3. Validation results
+3. Working plan file (problem statement, scan findings, decisions)
 
 ## What to Check
 

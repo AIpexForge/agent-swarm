@@ -162,7 +162,7 @@ The depth of research scales with complexity — a simple CRUD feature gets a li
 
 ## Phase 4: PRD Generation
 
-Generate the PRD using the comprehensive template. Every section matters.
+Generate the PRD as a **markdown document** using the template below. The output file (`specs/FEAT-[feature-name].md`) is committed directly to the repo — markdown is the only accepted format. Every section matters.
 
 ### PRD Template Structure
 

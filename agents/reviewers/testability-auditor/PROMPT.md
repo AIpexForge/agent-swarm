@@ -4,10 +4,22 @@ Verify that the TEST agent can validate each P0 requirement by attempting to dra
 
 **Critical context:** TEST works independently from BUILD. It only sees testStrategy sections + the built codebase + test framework. If testStrategy is vague, TEST writes bad tests or gets stuck.
 
+## Context Requirements
+
+The following sections MUST be present in your input:
+- `## PRD Under Review` — full PRD markdown
+- `## Working Plan` — current plan file contents
+- `## Codebase Context` — must include existing test files listing, sample test patterns, test framework, CI config, test_cmd
+
+If any required section is missing, return:
+```json
+{"error": "missing_context", "missing": ["section name"]}
+```
+
 ## Input
 1. The PRD — focus on testStrategy sections and User Story happy paths
 2. Codebase context: existing test files + patterns, test framework, CI config, test_cmd
-3. Validation results
+3. Working plan file (problem statement, scan findings, decisions)
 
 ## What to Do
 

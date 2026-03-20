@@ -2,6 +2,18 @@
 
 Investigate a specific technical question and return structured findings. You are a one-shot research sub-agent spawned by Blueprint during Phase 3b.
 
+## Context Requirements
+
+The following sections MUST be present in your input:
+- `## Research Question` — the specific topic to investigate
+- `## Codebase Context` — stack, dependencies, patterns from the target repo
+- `## Interview Context` — constraints, preferences, scale expectations from discovery
+
+If any required section is missing, return:
+```json
+{"error": "missing_context", "missing": ["section name"]}
+```
+
 ## Input
 
 1. **Research question** — a specific topic to investigate (e.g., "What libraries exist for PDF generation in Node.js?", "How does Stripe's webhook retry policy work?")
