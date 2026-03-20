@@ -2,111 +2,111 @@
 
 How Blueprint spawns, feeds, and aggregates the 4 review sub-agents.
 
----
+## Reviewer Roster
 
-## Spawning
+| Label | Prompt | Finds | Key Output |
+|-------|--------|-------|------------|
+| `contradiction` | `agents/reviewers/contradiction-detector/PROMPT.md` | Internal inconsistencies | Contradiction list with both locations |
+| `architecture` | `agents/reviewers/architecture-auditor/PROMPT.md` | Bad design, unhandled failures | Failure scenario table |
+| `integration` | `agents/reviewers/integration-auditor/PROMPT.md` | Codebase conflicts, duplicated modules | Duplication + pattern conflict report |
+| `testability` | `agents/reviewers/testability-auditor/PROMPT.md` | Vague/untestable testStrategies | Draft test snippets or failure explanations |
 
-Blueprint spawns all 4 reviewers in **parallel** as one-shot sub-agents. Each reviewer runs in a fresh session with no memory of prior interactions.
+All 4 run in **parallel** on `anthropic/claude-sonnet-4-6` with 90s timeout.
 
-### Context Payload
+## Context Payload
 
-Each reviewer receives the same context bundle:
+### All reviewers receive:
+- Full PRD markdown
+- Validation results (score, grade, scope challenge findings)
 
+### Integration Auditor additionally receives (heavy context):
+- Directory tree (3+ levels)
+- Key module definitions and public interfaces
+- Router/API endpoint definitions
+- Schema files
+- Existing patterns for similar problems
+- Package manifest (package.json / go.mod / etc.)
+
+### Testability Auditor additionally receives:
+- Existing test files listing + sample test patterns
+- Test framework identification
+- CI configuration
+- `.agents/commands.yml` test_cmd
+
+### Architecture Auditor additionally receives:
+- Directory tree (top level)
+- `.agents/commands.yml` stack info
+
+### Contradiction Detector receives:
+- PRD only + validation results (no codebase context needed)
+
+## Spawn Pattern
+
+For each reviewer:
+1. Read the prompt file from `~/.openclaw/workspace/agent-swarm/agents/reviewers/<type>/PROMPT.md`
+2. Assemble the task:
+   ```
+   <prompt file contents>
+
+   ---
+
+   ## PRD Under Review
+   <full PRD markdown>
+
+   ## Codebase Context
+   <appropriate context per reviewer type — see above>
+
+   ## Validation Results
+   <15-check score, grade, scope challenge findings>
+
+   Return your review as the structured JSON specified in your prompt.
+   ```
+3. Spawn: `sessions_spawn(task=<assembled>, label=<label>, model="anthropic/claude-sonnet-4-6", runTimeoutSeconds=90)`
+
+Spawn all 4 in parallel.
+
+## Normalized Issue Schema
+
+All reviewers use this base schema for issues:
+```json
+{
+  "severity": "critical | major | minor",
+  "section": "REQ-NNN or section name",
+  "issue": "Clear description",
+  "suggestion": "Concrete fix",
+  "effort": "trivial | moderate | significant"
+}
 ```
-1. PROMPT.md — the reviewer's specific prompt (from agents/reviewers/<type>/PROMPT.md)
-2. The full PRD markdown
-3. Codebase context:
-   - Directory tree (top 3 levels)
-   - .agents/commands.yml content
-   - AGENTS.md content (if exists)
-   - package.json / Cargo.toml / go.mod (whatever applies)
-   - Existing test files listing (for test-strategy reviewer)
-   - Key architectural files (router definitions, schema files, config)
-4. Validation results — the 13-check score + any flagged issues
-```
 
-### Spawn Pattern
-
-```
-Blueprint sends to each reviewer:
-
-"You are [Reviewer Name]. Review the following PRD against the codebase context provided.
-
-## Your Review Prompt
-<contents of PROMPT.md>
-
-## PRD
-<full PRD markdown>
-
-## Codebase Context
-<directory tree, config files, existing patterns>
-
-## Validation Results
-<13-check score, flagged issues>
-
-Return your review as the structured JSON specified in your prompt."
-```
-
----
+Each reviewer adds typed extensions:
+- Contradiction Detector: `contradictions[]` with `location_a`, `location_b`, `type`
+- Architecture Auditor: `failure_scenarios[]`, `design_evaluation{}`
+- Integration Auditor: `duplication_check[]`, `pattern_conflicts[]`, `phantom_references[]`
+- Testability Auditor: `requirement_assessments[]` with `draft_test`, `improved_strategy`
 
 ## Aggregation
 
-Blueprint collects all 4 reviewer responses and aggregates:
-
 ### Decision Matrix
 
-| Architecture | Requirements | Scope | Test Strategy | Action |
-|---|---|---|---|---|
-| pass | pass | pass | pass | → Proceed to GitHub output |
-| concerns | any | any | any | → Auto-incorporate, re-validate, proceed |
-| any | concerns | any | any | → Auto-incorporate, re-validate, proceed |
-| any | any | concerns | any | → Auto-incorporate, re-validate, proceed |
-| any | any | any | concerns | → Auto-incorporate (use `improved_strategies`), re-validate, proceed |
-| fail (any) | - | - | - | → Fix criticals, re-run failed reviewer (max 1 retry) |
+| Any Critical? | Action |
+|---|---|
+| No criticals, all pass | → Proceed to GitHub output |
+| No criticals, any concerns | → Auto-incorporate, re-validate, proceed |
+| Any critical | → Fix criticals, re-run ONLY the failed reviewer (max 1 retry) |
 
 ### Auto-Incorporation Rules
 
-When a reviewer returns `concerns`:
-1. For each `major` issue with a `suggestion`: apply the suggestion to the PRD
-2. For `improved_strategies` from test-strategy reviewer: replace existing testStrategy text
-3. For `missing_requirements` from requirements reviewer: add as P1 unless clearly P0
-4. For `scope_adjustments` from scope reviewer: apply priority changes, notify user in handoff
-5. Re-run validation (13 checks) after all incorporations
-6. Do NOT re-run the reviewers — one pass is enough unless there were criticals
+When incorporating reviewer feedback:
+1. **Contradiction Detector:** Resolve contradictions using the reviewer's suggested side
+2. **Architecture Auditor:** Add unhandled failure scenarios to Open Questions; update architecture diagram if design issues found
+3. **Integration Auditor:** Update "Existing Code Overlap" section; fix phantom references; align patterns
+4. **Testability Auditor:** Replace testStrategy text with `improved_strategy` from the auditor; add `draft_test` snippets to an appendix
 
-### Failure Handling
-
-When a reviewer returns `fail`:
-1. Extract all `critical` severity issues
-2. Fix each critical issue in the PRD (Blueprint does this, not a sub-agent)
-3. Re-run ONLY the reviewer that failed (max 1 retry)
-4. If still fails after retry: proceed anyway, but flag all unresolved criticals in the handoff message and in the PR description
-
-### Handoff Summary
-
-The aggregated review results feed into Blueprint's handoff message:
-
-```
-Reviewer verdicts:
-• Architecture: pass ✅
-• Requirements: concerns → 2 suggestions incorporated ✅
-• Scope: pass ✅
-• Test Strategy: concerns → 3 testStrategies improved ✅
-```
-
----
+After incorporation, re-run validation (15 checks). Do NOT re-run reviewers — one pass is enough unless criticals exist.
 
 ## Timeout
 
-Each reviewer gets a **90-second timeout**. If a reviewer doesn't respond:
+Each reviewer gets 90 seconds. On timeout:
 - Log the timeout
-- Treat as `pass` (don't block the pipeline on a hung sub-agent)
-- Note in handoff: "Architecture review timed out — manual review recommended"
-
----
-
-## Cost Efficiency
-
-All 4 reviewers use the same model as Blueprint. They receive a focused payload (PRD + relevant context), not the entire conversation history. Expected token usage per reviewer: ~2-4k input, ~1-2k output.
-
-Total review phase cost: ~4x a single sub-agent call. Worth it for the quality gate.
+- Treat as `pass`
+- Note in handoff: "[Reviewer] timed out — manual review recommended"

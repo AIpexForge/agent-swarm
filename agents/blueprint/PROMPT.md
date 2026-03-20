@@ -311,49 +311,33 @@ Scope challenge issues are returned alongside the quality score. Blueprint auto-
 
 ---
 
-## Phase 6: Sub-Agent Review (4 Reviewers)
+## Phase 6: Sub-Agent Review (4 Targeted Detectors)
 
-After validation passes (≥ ACCEPTABLE), spawn 4 review sub-agents in parallel. Each runs in a fresh session.
+After validation passes (≥ ACCEPTABLE), spawn 4 review sub-agents in parallel. Each runs in a fresh session and detects a specific class of failure.
 
 ### Sub-Agent Templates
 
-Each reviewer has a detailed prompt file. Read the prompt from disk, prepend it to the task context, and pass to `sessions_spawn`.
+| Label | Prompt File | Detects |
+|-------|-------------|---------|
+| `contradiction` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/contradiction-detector/PROMPT.md` | Internal inconsistencies, naming drift, document ↔ requirements mismatch |
+| `architecture` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/architecture-auditor/PROMPT.md` | Bad design, unhandled failure modes, bottlenecks |
+| `integration` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/integration-auditor/PROMPT.md` | Codebase conflicts, duplicated modules, phantom references |
+| `testability` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/testability-auditor/PROMPT.md` | Vague testStrategies — attempts to draft test code as proof |
 
-| Label | Prompt File | Model | Timeout |
-|-------|-------------|-------|---------|
-| `arch-review` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/architecture/PROMPT.md` | `anthropic/claude-sonnet-4-6` | 90s |
-| `req-review` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/requirements/PROMPT.md` | `anthropic/claude-sonnet-4-6` | 90s |
-| `scope-review` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/scope/PROMPT.md` | `anthropic/claude-sonnet-4-6` | 90s |
-| `test-review` | `~/.openclaw/workspace/agent-swarm/agents/reviewers/test-strategy/PROMPT.md` | `anthropic/claude-sonnet-4-6` | 90s |
+All run on `anthropic/claude-sonnet-4-6` with 90s timeout.
 
 ### Spawn Pattern
 
 For each reviewer:
 1. Read the prompt file from the path above
-2. Assemble the task:
-   ```
-   <prompt file contents>
-
-   ---
-
-   ## PRD Under Review
-   <full PRD markdown>
-
-   ## Codebase Context
-   <directory tree (3 levels), .agents/commands.yml, AGENTS.md, package.json/equivalent, existing test files listing>
-
-   ## Validation Results
-   <13-check score, grade, flagged issues>
-
-   Return your review as the structured JSON specified in your prompt.
-   ```
+2. Assemble the task with appropriate context (see ORCHESTRATION.md for per-reviewer context payloads)
 3. Spawn: `sessions_spawn(task=<assembled>, label=<label>, model="anthropic/claude-sonnet-4-6", runTimeoutSeconds=90)`
 
 Spawn all 4 in parallel. Do NOT wait for one before spawning the next.
 
 ### Review Aggregation
 
-Each reviewer returns structured JSON:
+All reviewers return structured JSON with a normalized `issues[]` array:
 ```json
 {
   "verdict": "pass | concerns | fail",
@@ -361,8 +345,9 @@ Each reviewer returns structured JSON:
     {
       "severity": "critical | major | minor",
       "section": "REQ-003",
-      "issue": "Missing error handling for rate limit exceeded",
-      "suggestion": "Add acceptance criterion for 429 response handling"
+      "issue": "...",
+      "suggestion": "...",
+      "effort": "trivial | moderate | significant"
     }
   ]
 }
@@ -370,11 +355,11 @@ Each reviewer returns structured JSON:
 
 **Decision logic:**
 - All pass → proceed to GitHub output
-- Any concerns (no criticals) → auto-incorporate suggestions (use `improved_strategies` from test-review, `missing_requirements` from req-review, `scope_adjustments` from scope-review), re-validate, proceed
+- Any concerns (no criticals) → auto-incorporate suggestions, re-validate, proceed
 - Any critical → fix critical issues, re-run ONLY the failed reviewer (max 1 retry), then proceed or escalate to user
 - Timeout (no response in 90s) → treat as pass, note in handoff: "[Reviewer] timed out — manual review recommended"
 
-See `~/.openclaw/workspace/agent-swarm/agents/reviewers/ORCHESTRATION.md` for full aggregation rules.
+See `~/.openclaw/workspace/agent-swarm/agents/reviewers/ORCHESTRATION.md` for full aggregation and auto-incorporation rules.
 
 ---
 
