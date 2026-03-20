@@ -46,15 +46,17 @@ Do NOT execute any code. Read only.
 
 Break requirements into tasks following these rules:
 
-1. **Each task = one focused concern** completable by a BUILD agent in ~30 minutes of agent execution time.
-2. **~200 lines changed** is a sizing guideline, not a hard ceiling. Prompt files, config files, and documentation tasks may legitimately exceed this.
-3. **Derive acceptance criteria and testStrategy from the spec's REQ sections.** Do not invent new criteria — extract, adapt, and scope them to the specific task.
-4. **Map dependencies between tasks.** Foundation tasks (shared types, config, utilities) come first. Tasks that consume those outputs come later.
-5. **Every P0 requirement must produce at least one task.** P1 requirements should produce tasks. P2 requirements are optional.
-6. **Classify each task** as:
-   - `small` — <15 min agent time
-   - `medium` — 15-30 min agent time
-   - `large` — >30 min agent time (these MUST be split before issue creation)
+1. **Size tasks to fit within ~100k tokens of BUILD agent context.** This is the primary sizing constraint. A task that would require the BUILD agent to hold more than 100k tokens of context (spec + codebase + conversation) must be split. In practice this means:
+   - Tasks touching 1-3 files with straightforward logic → fine
+   - Tasks touching 5+ files across multiple modules or requiring large context windows (complex integrations, multi-step migrations) → likely needs splitting
+   - When in doubt, estimate: issue body + relevant spec sections + files to read/modify + test files. If it feels like it'd fill a long conversation, split it.
+2. **Derive acceptance criteria and testStrategy from the spec's REQ sections.** Do not invent new criteria — extract, adapt, and scope them to the specific task.
+3. **Map dependencies between tasks.** Foundation tasks (shared types, config, utilities) come first. Tasks that consume those outputs come later.
+4. **Every P0 requirement must produce at least one task.** P1 requirements should produce tasks. P2 requirements are optional.
+5. **Classify each task** as:
+   - `small` — fits easily in BUILD context, ~1-3 files, straightforward
+   - `medium` — fits in BUILD context but needs more files or complexity
+   - `large` — would exceed ~100k tokens of BUILD context (MUST be split before issue creation)
 
 ### 1.4 — Post Decomposition Plan Comment
 
@@ -155,7 +157,7 @@ depends_on: pending
 
 **Rules for Pass 1:**
 - `depends_on` is always `pending` in Pass 1. Real issue numbers are backfilled in Pass 2.
-- `size` must be `small` or `medium`. If Blueprint approved a task as `large`, something went wrong — do not create it; report the error.
+- `size` must be `small` or `medium` (fits within ~100k tokens of BUILD agent context). If Blueprint approved a task as `large`, something went wrong — do not create it; report the error.
 - Record each created issue number from the `gh issue create` output.
 - If `gh issue create` fails, record the failure and continue with remaining tasks. Report all failures at the end.
 
@@ -221,7 +223,7 @@ After all issues are created and backfilled, output a JSON result block as your 
 2. **Never invent acceptance criteria or testStrategy.** Derive them from the spec's REQ sections. If a REQ lacks testStrategy, flag it in your plan comment notes.
 3. **Never execute code from the target repo.** Read files only.
 4. **Always create issues in dependency order.** Foundations first, consumers last. This gives lower issue numbers to prerequisite tasks.
-5. **Never create a task with `size: large`.** If a task is large after Blueprint approval, something went wrong. Report it as an error.
+5. **Never create a task with `size: large`.** Large = would exceed ~100k tokens of BUILD agent context. If a task is still large after Blueprint approval, report it as an error.
 6. **Two-pass dependency backfill is mandatory.** Pass 1 uses `depends_on: pending`. Pass 2 replaces with real numbers. Never try to predict issue numbers.
 7. **Be precise with file paths.** `Files Likely Affected` should reference real paths from the codebase scan, not guesses.
 8. **Keep task descriptions actionable.** A BUILD agent reading only the issue body (not the spec) should understand what to implement.
