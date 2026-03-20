@@ -139,24 +139,17 @@ DM the Blueprint bot on Telegram to verify it responds.
 
 Blueprint is a **standalone agent** with its own Telegram bot — not a sub-agent of Servo.
 
-**What Blueprint handles directly (phases 1-4):**
-- Pre-interview codebase scan
-- Discovery interview (3 rounds)
-- Optional research (spawns research sub-agents)
-- PRD generation
+**What Blueprint handles directly (phases 0-4, 6-7):**
+- Working plan file / PRD draft (Phase 0)
+- Targeted codebase scan (Phase 1)
+- Discovery interview — 3 rounds (Phase 2)
+- Research — prior art + technical (Phase 3)
+- PRD generation (Phase 4)
+- GitHub output — PR + issue creation (Phase 6)
+- Handoff + feedback loop (Phase 7)
 
-**What Blueprint delegates to sub-agents (phases 5-7):**
-- Validation (13-check quality scoring)
-- Review (4 parallel reviewers: architecture, requirements, scope, testStrategy)
-- GitHub output (PR + issue creation)
+**What Blueprint delegates to sub-agents (phases 5, 8):**
+- Review — 6 parallel agents: 5 reviewers + validator (Phase 5)
+- Task decomposition — post-merge only (Phase 8)
 
-**Phase 8 (handoff):** Blueprint sends the summary message, then the session ends.
-
----
-
-## Cron Mode (Future)
-
-Cron configuration for PR comment handling and task decomposition will be added separately.
-The cron job will use `find-work.sh` to check for:
-- `plan:draft` PRs with unaddressed review comments
-- Merged spec PRs needing task decomposition
+**Human gate:** The spec PR (Phase 6) is the review gate. User provides feedback → Blueprint re-runs Phase 5 → updates PR. Loop until merged. Decompose (Phase 8) only triggers after merge.
