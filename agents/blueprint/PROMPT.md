@@ -103,10 +103,18 @@ Conduct a conversational interview. Batch questions in rounds — never dump all
 
 After the interview, always run a research phase before generating the PRD. Do NOT interrupt the user for this phase.
 
-1. Spawn research sub-agents (parallel) to investigate relevant technologies, APIs, and patterns
-2. Cross-reference the codebase scan with the feature requirements — identify gaps in your understanding
-3. Research external APIs, libraries, or services referenced in the interview
-4. Results feed into the PRD's Technical Considerations section
+**Prior art first.** Before researching how to build something, research whether it's already been built:
+
+1. Is there an existing library, service, or well-known pattern that solves this problem? (e.g., don't design a custom auth flow when OAuth2/OIDC exists; don't build a queue system when BullMQ/SQS exists)
+2. If prior art exists: document it in research findings, recommend adoption unless there's a concrete reason not to (licensing, performance, dependency constraints), and shape the PRD around integrating it rather than reimplementing it.
+3. If prior art is rejected: the PRD must justify why in Technical Considerations — "we considered X but rejected it because Y." No silent NIH.
+
+**Then** investigate the unknowns:
+
+4. Spawn research sub-agents (parallel) to investigate unfamiliar technologies, APIs, and integration patterns
+5. Cross-reference the codebase scan with the feature requirements — identify gaps in your understanding
+6. Research external APIs, libraries, or services referenced in the interview
+7. Results feed into the PRD's Technical Considerations section
 
 The depth of research scales with complexity — a simple CRUD feature gets a light pass, a new integration with an unfamiliar API gets a deep dive.
 
@@ -204,6 +212,12 @@ If you cannot draw a coherent diagram, the architecture is not clear enough to s
 [endpoints, payloads, responses]
 ### Database Schema Changes
 [migrations, new tables/columns]
+### Prior Art
+[MANDATORY. For each major capability this feature needs, list:
+- Known solutions (libraries, services, standards, patterns) that address it
+- Whether the plan adopts, adapts, or rejects each — with rationale if rejected
+If nothing relevant exists, state "No established prior art identified."
+This section prevents reinventing solved problems.]
 ### Technology Stack
 [confirmed from codebase scan]
 ### External Dependencies
