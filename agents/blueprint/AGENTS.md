@@ -263,20 +263,27 @@ When the user says "decompose" (or similar):
 
 1. **Confirm the PR is merged.** Check with `gh pr view <number> --json state`. If not merged, ask the user to merge first.
 2. **Pull latest main** so the spec is on the default branch.
-3. **Spawn decompose** (one-shot — it runs to completion):
+3. **Pre-create labels** if they don't already exist (saves decompose 30s+ of API calls):
+   ```bash
+   gh label create "ready-for-build" --color "1D76DB" --description "Task ready for BUILD agent" --repo <repo> --force
+   gh label create "plan:draft" --color "0E8A16" --description "Plan/spec under review" --repo <repo> --force
+   ```
+4. **Spawn decompose** (one-shot — it runs to completion):
    ```
    sessions_spawn(agentId="decompose", runTimeoutSeconds=1800, task="
    Read the spec at <repo_path>/specs/FEAT-<name>.md.
    Repo: <org/repo>. Repo path: <repo_path>.
    Feature branch: feat/<slug>.
-   Plan issue: #<N>.
-   AGENTS.md: <contents or path>
-   commands.yml: <contents or path>
+   Plan issue: #<plan_issue_number>.
+   AGENTS.md: <path to target repo AGENTS.md>
+   commands.yml: <path to .agents/commands.yml>
    Directory listing: <top-2-level>
-   Skip the approval step — create issues directly after posting the plan comment.
+   Labels are pre-created. Do not create labels.
    ")
    ```
-4. **Wait for completion.** Decompose posts a plan comment on the plan issue, then creates GitHub issues with two-pass dependency backfill, and returns a JSON result.
+   **IMPORTANT:** Always pass `plan_issue` — decompose posts its plan comment there and links it from all task issues.
+5. **Wait for completion.** Decompose posts a plan comment, creates a tracking issue, creates task issues with two-pass dependency backfill, and returns a JSON result.
+6. **Parse the JSON result** and report to user.
 8. **Report to user:**
    ```
    📐 Decomposed [feature-name] into [N] tasks across [W] execution waves.
@@ -345,7 +352,7 @@ All sub-agents are registered in `openclaw.json` with `parentOnly: true` (only B
 | `contradiction-detector` | Internal inconsistencies | Sonnet | 180s | 6 |
 | `coherence-auditor` | Plan coherence | Sonnet | 180s | 6 |
 | `testability-auditor` | testStrategy verifiability | Sonnet | 180s | 6 |
-| `decompose` | Task breakdown → GitHub issues | Sonnet | 1800s (30m) | Post-merge |
+| `decompose` | Task breakdown → tracking issue + task issues | Sonnet | 1800s (30m) | Phase 9 |
 
 **Spawn pattern:**
 ```
