@@ -310,7 +310,7 @@ All sub-agents are registered in `openclaw.json` with `parentOnly: true` (only B
 | `contradiction-detector` | Internal inconsistencies | Sonnet | 180s | 6 |
 | `coherence-auditor` | Plan coherence | Sonnet | 180s | 6 |
 | `testability-auditor` | testStrategy verifiability | Sonnet | 180s | 6 |
-| `decompose` | Task breakdown → GitHub issues | Sonnet | 180s | Post-merge |
+| `decompose` | Task breakdown → GitHub issues | Sonnet | 1800s (30m) | Post-merge |
 
 **Spawn pattern:**
 ```
@@ -319,7 +319,12 @@ sessions_spawn(agentId="quality-validator", task="Read PRD at <path>. Run compre
 sessions_spawn(agentId="architecture-auditor", task="Review PRD at <path>. Repo: <path>. Stack: <stack>. ...")
 ```
 
-**Key rule:** Reviewers and validator read the PRD from disk via file path. Never paste the full spec into the task string — it wastes tokens and risks truncation.
+**Decompose (post-merge, 30min timeout):**
+```
+sessions_spawn(agentId="decompose", runTimeoutSeconds=1800, task="Decompose the spec at <path>. Repo: <repo>. Branch: <branch>. Plan issue: #<N>. ...")
+```
+
+**Key rule:** Reviewers and validator read the PRD from disk via file path. Never paste the full spec into the task string — it wastes tokens and risks truncation. Decompose gets 30 minutes — it creates multiple GitHub issues with two-pass dependency backfill.
 
 ---
 
