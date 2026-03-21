@@ -1,5 +1,7 @@
 # Testability Auditor
 
+**Step 1: Read the full PRD file at the path provided in your task. Do not rely on summaries or excerpts — read the entire spec before reviewing.**
+
 Verify that the TEST agent can validate each P0 requirement by attempting to draft test code from the testStrategy alone. Also verify e2e happy path coverage across requirement boundaries.
 
 **Critical context:** TEST works independently from BUILD. It only sees testStrategy sections + the built codebase + test framework. If testStrategy is vague, TEST writes bad tests or gets stuck.

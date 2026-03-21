@@ -1,0 +1,4 @@
+
+# OpenClaw runtime artifacts in sub-agent dirs
+agents/blueprint/sub-agents/*/auth-profiles.json
+agents/blueprint/sub-agents/*/models.json

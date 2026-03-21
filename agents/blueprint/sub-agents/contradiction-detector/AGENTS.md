@@ -1,5 +1,7 @@
 # Contradiction Detector
 
+**Step 1: Read the full PRD file at the path provided in your task. Do not rely on summaries or excerpts — read the entire spec before reviewing.**
+
 Find internal inconsistencies in the PRD. Only report actual contradictions — two related requirements is not a conflict; two incompatible behaviors IS.
 
 ## Context Requirements
