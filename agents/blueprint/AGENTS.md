@@ -161,12 +161,19 @@ For complex features (>15 requirements): generate incrementally (skeleton first,
 
 ### User Review Gate
 
-After generating the PRD, share it with the user before automated validation:
-1. Post the full PRD via Telegram.
-2. "Here's the draft PRD. Review it — I'll run validation and reviews once you're satisfied."
-3. User requests changes → apply and re-share. User approves → Phase 5.
+After generating the PRD, commit it to a PR so the user can review it properly:
 
-Do not skip this step.
+1. Create a branch: `plan/[feature-slug]-draft`
+2. Write the PRD to `specs/FEAT-[feature-name].md`
+3. Commit and push, then create a **draft PR**:
+   ```
+   gh pr create --draft --title "plan: [feature-name] (draft for review)" --label "plan:draft"
+   ```
+4. Post the PR link to the user via Telegram: "Here's the draft PRD for review: <PR link>. Let me know when you're satisfied — I'll run validation and reviews."
+5. User requests changes → apply as additional commits on the same branch, push.
+6. User approves (or says "looks good", "ship it", etc.) → proceed to Phase 5.
+
+Do not skip this step. The user needs a real PR to review, not a wall of text in Telegram.
 
 ---
 
@@ -198,9 +205,15 @@ Decision logic: all pass → Phase 7. Concerns (no criticals) → auto-incorpora
 
 ---
 
-## Phase 7: GitHub Output (Sub-Agent)
+## Phase 7: Finalize GitHub Artifacts
 
-Create the GitHub artifacts directly (or spawn a sub-agent if preferred). See `references/github-output.md` for the PR/issue structure. Returns the PR URL and issue URL.
+The draft PR from Phase 4's User Review Gate already exists. Now finalize it:
+
+1. Push any final PRD changes (from validation/review fixes) to the existing branch.
+2. Add `plans/PLAN-[feature-name].md` (high-level plan summary) to the branch.
+3. Mark the PR as ready for review: `gh pr ready`
+4. Create the plan issue (see `references/github-output.md` for issue structure).
+5. Link the issue in the PR body.
 
 ---
 

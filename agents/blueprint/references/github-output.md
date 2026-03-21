@@ -1,40 +1,37 @@
-# GitHub Output — Sub-Agent Instructions
+# GitHub Output — Finalization Instructions
 
-Blueprint spawns a sub-agent to create the GitHub artifacts. This file contains the sub-agent's instructions.
+By Phase 7, the draft PR already exists from the User Review Gate (Phase 4). This phase finalizes it.
 
-## PR on the Target Repo
+## Finalize the Existing PR
 
-```
-PR: "plan: [feature-name]"
-Branch: plan/[feature-slug]
-Labels: plan:draft
-```
+1. Push any remaining changes to the existing `plan/[feature-slug]-draft` branch:
+   - Updated PRD (post-validation/review fixes) → `specs/FEAT-[feature-name].md`
+   - Plan summary → `plans/PLAN-[feature-name].md`
 
-## Files in PR
+2. Mark the PR as ready:
+   ```bash
+   gh pr ready
+   ```
 
-```
-specs/FEAT-[feature-name].md    ← The PRD
-plans/PLAN-[feature-name].md    ← High-level plan summary (what/why, not how)
-```
+3. Update PR body with validation score and reviewer verdicts if not already there.
 
-## Plan Issue
+## Create Plan Issue
 
-```
-Title: "[PLAN] Feature Name"
-Labels: plan:draft
-Body:
-  - Executive summary
-  - Link to PR
-  - Validation score + grade
-  - Reviewer verdicts summary
-  - Task count estimate
+```bash
+gh issue create \
+  --repo <repo> \
+  --title "[PLAN] Feature Name" \
+  --label "plan:draft" \
+  --body "<ISSUE_BODY>"
 ```
 
-## Sub-Agent Behavior
+**Issue body includes:**
+- Executive summary
+- Link to PR
+- Validation score + grade
+- Reviewer verdicts summary
+- Task count estimate
 
-1. Create the branch from the repo's default branch.
-2. Write the PRD to `specs/FEAT-[feature-name].md`.
-3. Write the plan summary to `plans/PLAN-[feature-name].md`.
-4. Commit, push, and create the PR with `gh pr create`.
-5. Create the plan issue with `gh issue create`.
-6. Return the PR URL and issue URL to Blueprint as the final message.
+## Return Values
+
+Return the PR URL and issue URL to Blueprint as the final message.
