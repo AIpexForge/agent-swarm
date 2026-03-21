@@ -108,13 +108,17 @@ Scale by classification:
 
 ### 3.2 — Spawn Research Sub-Agents (Parallel)
 
-**Codebase understanding:**
+Spawn research agents using `sessions_spawn(agentId="research")` with a focused question as the task. One question per spawn — spawn multiple in parallel for different topics.
+
+**Example task strings:**
+
+Codebase understanding:
 > "I'm building [feature] for [repo]. Find 2-3 most similar implementations — document: directory structure, naming pattern, public API exports, shared utilities, error handling, registration/wiring. Return concrete file paths and patterns."
 
-**External APIs/libraries:**
+External APIs/libraries:
 > "I'm integrating [library/API]. Find official docs: setup, API reference, config with defaults, pitfalls, migration gotchas. Also 1-2 production-quality OSS examples. Return: key API signatures, recommended config, common mistakes."
 
-**Architecture decisions (complex only):**
+Architecture decisions (complex only):
 > "I'm designing [subsystem]. Find best practices: proven patterns, scalability trade-offs, failure modes, case studies. Return: options with pros/cons, recommended approach with rationale."
 
 ### 3.3 — Synthesize Findings
@@ -167,7 +171,7 @@ Do not skip this step.
 
 ## Phase 5: Validation (Sub-Agent)
 
-Spawn a validation sub-agent with the PRD and the checks from `references/validation-checks.md`. Use the comprehensive or minimal checklist based on the PRD template used.
+Spawn `sessions_spawn(agentId="quality-validator")` with the PRD content as the task. The validator's prompt is pre-loaded from its agent config. Include the PRD and specify whether to use the comprehensive (14 checks) or minimal (6 checks) checklist. See `references/validation-checks.md` for the full checklist.
 
 The validator returns score, grade, and issues. If grade < ACCEPTABLE, auto-fix what you can and re-submit (max 1 retry). Remaining issues are flagged to the user.
 
@@ -177,11 +181,17 @@ The validator returns score, grade, and issues. If grade < ACCEPTABLE, auto-fix 
 
 **Skip for trivial/simple requests.**
 
-Spawn 4 review sub-agents in parallel (see `references/reviewers.md` for reviewer details and output contract):
-1. **Architecture** — soundness, scalability, failure modes, rollback
-2. **Requirements Completeness** — gaps, edge cases, error states, dependency chain
-3. **Scope & Feasibility** — realism, hidden complexity, estimates
-4. **testStrategy** — verifiability, concreteness, measurability
+Spawn 5 review sub-agents in parallel by `agentId`. Each agent's prompt is pre-loaded from its config — pass the PRD content + codebase context as the task string.
+
+| agentId | Focus |
+|---------|-------|
+| `architecture-auditor` | Soundness, scalability, failure modes, rollback |
+| `integration-auditor` | Codebase fit, duplicated modules, pattern conflicts |
+| `contradiction-detector` | Internal inconsistencies between requirements |
+| `coherence-auditor` | Plan intent vs. what requirements actually deliver |
+| `testability-auditor` | Verifiability, concreteness, e2e coverage |
+
+See `references/reviewers.md` for output contract.
 
 Decision logic: all pass → Phase 7. Concerns (no criticals) → auto-incorporate, proceed. Criticals → fix, re-run that reviewer (max 1 retry), then proceed or escalate.
 
@@ -189,7 +199,7 @@ Decision logic: all pass → Phase 7. Concerns (no criticals) → auto-incorpora
 
 ## Phase 7: GitHub Output (Sub-Agent)
 
-Spawn a sub-agent to create GitHub artifacts (see `references/github-output.md`). Returns the PR URL and issue URL.
+Create the GitHub artifacts directly (or spawn a sub-agent if preferred). See `references/github-output.md` for the PR/issue structure. Returns the PR URL and issue URL.
 
 ---
 
@@ -250,6 +260,31 @@ Never end with: "Let me know if you have questions", a summary without a follow-
 - **GitHub CLI:** `gh` — for PRs, issues, labels
 - **Target repo:** Must be onboarded (`.agents/commands.yml` exists)
 - **Taskmaster:** `task-master-ai` npm package — post-merge task decomposition
+- **Registered sub-agents:** All sub-agents are registered in `openclaw.json` and spawned by `agentId` via `sessions_spawn`. See Sub-Agent Registry below.
+
+---
+
+## Sub-Agent Registry
+
+All sub-agents are registered in `openclaw.json` with `parentOnly: true` (only Blueprint can spawn them). Spawn via `sessions_spawn(agentId="<id>", task="<context + instructions>")`.
+
+| agentId | Role | Model | Timeout | Phase |
+|---------|------|-------|---------|-------|
+| `research` | Investigate technical questions | Sonnet | 180s | 3 |
+| `quality-validator` | Score PRD against checklist | Sonnet | 180s | 5 |
+| `architecture-auditor` | Architecture soundness | Sonnet | 180s | 6 |
+| `integration-auditor` | Codebase compatibility | Sonnet | 180s | 6 |
+| `contradiction-detector` | Internal inconsistencies | Sonnet | 180s | 6 |
+| `coherence-auditor` | Plan coherence | Sonnet | 180s | 6 |
+| `testability-auditor` | testStrategy verifiability | Sonnet | 180s | 6 |
+| `decompose` | Task breakdown → GitHub issues | Sonnet | 180s | Post-merge |
+
+**Spawn pattern:**
+```
+sessions_spawn(agentId="research", task="<question + context>")
+sessions_spawn(agentId="quality-validator", task="<PRD content + checklist type>")
+sessions_spawn(agentId="architecture-auditor", task="<PRD + codebase context>")
+```
 
 ---
 

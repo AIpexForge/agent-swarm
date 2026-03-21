@@ -343,6 +343,42 @@ If any label failed to create, record it. Include manual creation instructions i
 
 ---
 
+## Phase 5b: Register Sub-Agents (if Blueprint is the planning agent)
+
+If the system uses Blueprint as the planning agent, ensure the following sub-agents are registered in the user's `openclaw.json` under `agents.list`. Each sub-agent should have `parentOnly: true` so only Blueprint can spawn them.
+
+**Required sub-agents:**
+
+| agentId | Name | Model | Purpose |
+|---------|------|-------|---------|
+| `research` | Research Agent | sonnet | Technical question investigation |
+| `quality-validator` | Quality Validator | sonnet | PRD scoring against checklist |
+| `architecture-auditor` | Architecture Auditor | sonnet | Architecture soundness review |
+| `integration-auditor` | Integration Auditor | sonnet | Codebase compatibility review |
+| `contradiction-detector` | Contradiction Detector | sonnet | Internal inconsistency detection |
+| `coherence-auditor` | Coherence Auditor | sonnet | Plan coherence review |
+| `testability-auditor` | Testability Auditor | sonnet | testStrategy verifiability |
+| `decompose` | Decompose Agent | sonnet | Task breakdown into GitHub issues |
+
+**For each agent, create:**
+1. Agent directory: `~/.openclaw/agents/<agentId>/agent/`
+2. Copy the prompt from `agents/<path>/PROMPT.md` → `~/.openclaw/agents/<agentId>/agent/AGENTS.md`
+3. Add entry to `openclaw.json` `agents.list`:
+```json
+{
+    "id": "<agentId>",
+    "name": "<Name>",
+    "agentDir": "~/.openclaw/agents/<agentId>/agent",
+    "model": "anthropic/claude-sonnet-4-6",
+    "parentOnly": true
+}
+```
+4. Update Blueprint's `subagents.allowedAgents` to include all 8 agentIds.
+
+**Skip this phase** if sub-agents are already registered (check `openclaw.json` first).
+
+---
+
 ## Phase 6: Commit, Push, PR
 
 ### 6.1 — Branch & Commit
@@ -437,6 +473,7 @@ Send a concise summary:
 • .agents/commands.yml — <N> commands inferred
 • AGENTS.md — project context generated
 • 6 workflow labels created
+• 8 sub-agents registered (or already present)
 • <N> unknowns (see PR for details)
 
 PR: <link>
