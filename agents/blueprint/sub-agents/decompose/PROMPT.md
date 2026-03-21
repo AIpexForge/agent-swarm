@@ -85,13 +85,11 @@ gh issue comment <plan_issue> --repo <repo> --body '<PLAN_COMMENT>'
 - <any sizing rationale, assumptions, or concerns>
 ````
 
-### 1.5 — STOP AND WAIT
+### 1.5 — Plan Posted, Proceed
 
-After posting the plan comment, **stop and wait for Blueprint's approval message.** Do not create any issues until you receive explicit approval.
-
-Blueprint will review your plan and respond with one of:
-- **Approved as-is** — proceed with the plan unchanged
-- **Approved with changes** — a modified task list (tasks may be split, merged, reordered, or renamed). Use the modified list for issue creation.
+After posting the plan comment, check your task instructions:
+- If the task says **"Skip the approval step"** → proceed directly to Phase 2 (issue creation). No need to wait.
+- Otherwise → **stop and wait for Blueprint's approval message.** Do not create any issues until you receive explicit approval. Blueprint will respond with "Approved as-is" or "Approved with changes."
 
 ---
 

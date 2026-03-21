@@ -263,9 +263,9 @@ When the user says "decompose" (or similar):
 
 1. **Confirm the PR is merged.** Check with `gh pr view <number> --json state`. If not merged, ask the user to merge first.
 2. **Pull latest main** so the spec is on the default branch.
-3. **Spawn decompose as a persistent session** (not one-shot — it needs a multi-turn handshake):
+3. **Spawn decompose** (one-shot — it runs to completion):
    ```
-   sessions_spawn(agentId="decompose", mode="session", runTimeoutSeconds=1800, task="
+   sessions_spawn(agentId="decompose", runTimeoutSeconds=1800, task="
    Read the spec at <repo_path>/specs/FEAT-<name>.md.
    Repo: <org/repo>. Repo path: <repo_path>.
    Feature branch: feat/<slug>.
@@ -273,16 +273,10 @@ When the user says "decompose" (or similar):
    AGENTS.md: <contents or path>
    commands.yml: <contents or path>
    Directory listing: <top-2-level>
+   Skip the approval step — create issues directly after posting the plan comment.
    ")
    ```
-   **IMPORTANT:** Must be `mode="session"`, not `mode="run"`. Decompose has a STOP AND WAIT step — it posts a plan, then waits for your approval before creating issues. `mode="run"` would break this handshake.
-4. **Wait for decompose to post its plan.** Use `sessions_yield` — decompose will post a plan comment on the plan issue, then end its turn and wait for approval.
-5. **Review the plan.** Read the plan comment on the GitHub issue. Check for reasonable sizing, correct dependencies, no missing P0 requirements.
-6. **Approve or request changes** by sending a message into the decompose session:
-   - Plan looks good → `sessions_send(sessionKey="<decompose_session>", message="Approved as-is")`
-   - Changes needed → `sessions_send(sessionKey="<decompose_session>", message="Approved with changes: <specific feedback>")`
-   - Decompose picks up, creates issues, then returns its JSON result. Use `sessions_yield` again to receive it.
-7. **After approval,** decompose creates GitHub issues with two-pass dependency backfill and returns a JSON result.
+4. **Wait for completion.** Decompose posts a plan comment on the plan issue, then creates GitHub issues with two-pass dependency backfill, and returns a JSON result.
 8. **Report to user:**
    ```
    📐 Decomposed [feature-name] into [N] tasks across [W] execution waves.
@@ -360,11 +354,10 @@ sessions_spawn(agentId="quality-validator", task="Read PRD at <path>. Run compre
 sessions_spawn(agentId="architecture-auditor", task="Review PRD at <path>. Repo: <path>. Stack: <stack>. ...")
 ```
 
-**Decompose (post-merge, persistent session, 30min timeout):**
+**Decompose (post-merge, one-shot, 30min timeout):**
 ```
-sessions_spawn(agentId="decompose", mode="session", runTimeoutSeconds=1800, task="...")
+sessions_spawn(agentId="decompose", runTimeoutSeconds=1800, task="... Skip the approval step — create issues directly.")
 ```
-Then: `sessions_yield` → review plan → `sessions_send` approval → `sessions_yield` → get result.
 
 **Key rule:** Reviewers and validator read the PRD from disk via file path. Never paste the full spec into the task string — it wastes tokens and risks truncation. Decompose gets 30 minutes — it creates multiple GitHub issues with two-pass dependency backfill.
 
