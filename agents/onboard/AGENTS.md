@@ -395,6 +395,23 @@ The `agentDir` points directly to the sub-agent's directory in the agent-swarm r
 
 **IMPORTANT:** The key is `allowAgents` (not `allowedAgents`). Without this, Blueprint defaults to only being able to spawn itself. Sub-agent spawns will silently fail.
 
+**Link Blueprint's prompt to its workspace:**
+
+OpenClaw injects workspace files (AGENTS.md, SOUL.md, etc.) as system context. The prompt source of truth is in the repo at `agents/blueprint/AGENTS.md`, but Blueprint's workspace is at `~/.openclaw/workspace-blueprint/`. These must stay in sync.
+
+Use a **hardlink** (not a symlink — OpenClaw does not follow symlinks for workspace context injection):
+
+```bash
+ln <path-to-agent-swarm>/agents/blueprint/AGENTS.md ~/.openclaw/workspace-blueprint/AGENTS.md
+```
+
+Verify both files share the same inode:
+```bash
+ls -li ~/.openclaw/workspace-blueprint/AGENTS.md <path-to-agent-swarm>/agents/blueprint/AGENTS.md
+```
+
+**WARNING:** Hardlinks break when git operations replace the file (e.g., `git checkout` or `git reset --hard` creates a new file instead of editing in place). After such operations, re-run the `ln` command. Normal file edits preserve the hardlink.
+
 **Skip this phase** if sub-agents are already registered (check `openclaw.json` first).
 
 ---
