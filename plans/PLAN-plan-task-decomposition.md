@@ -18,7 +18,7 @@ Without this, every merged spec requires manual task issue creation — tedious,
 ## Key Decisions
 
 - **Blueprint runs it** as a cron capability (not a separate agent)
-- **Native decomposition** — LLM-based decomposition directly to `gh issue create` via Decompose agent
+- **No Taskmaster** — native LLM decomposition directly to `gh issue create`
 - **~30 min BUILD time** per task (agent execution time, not human hours)
 - **Sub-agent pattern** — Blueprint spawns a focused decomposition sub-agent per spec
 - **Two-pass dependencies** — create all issues first, backfill `depends_on` with real numbers
@@ -47,4 +47,4 @@ REQ-003 + REQ-006 → REQ-009 (P1)
 
 ## Out of Scope
 
-Cross-spec dependencies, parallel decomposition, subtasks, post-creation issue mutation.
+Cross-spec dependencies, parallel decomposition, Taskmaster, subtasks, post-creation issue mutation.

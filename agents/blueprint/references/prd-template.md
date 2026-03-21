@@ -10,7 +10,7 @@ Use this template for **standard** and **complex** requests. For trivial/simple 
 **Status:** Draft
 **Version:** 1.0
 **Target Repo:** [org/repo]
-**Decompose Ready:** Yes
+**Taskmaster Optimized:** Yes
 
 ---
 
@@ -132,5 +132,5 @@ Example format:
 | 1 | [question]    | [who] | Open   |
 
 ## Appendix: Task Breakdown Hints
-[Summary table for Decompose agent — task name, size estimate, dependencies]
+[Summary table for Taskmaster consumption — task name, size estimate, dependencies]
 ```
