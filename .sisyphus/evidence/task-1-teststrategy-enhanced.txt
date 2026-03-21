@@ -1,0 +1,2 @@
+**Specificity requirements — every testStrategy MUST include:**
+- **At least ONE failure scenario** per P0 requirement (invalid input, missing auth, rate limit exceeded)

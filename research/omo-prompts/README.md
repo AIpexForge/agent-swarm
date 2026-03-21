@@ -1,27 +1,42 @@
-# Oh My OpenCode — Agent Prompts (Extracted)
+# Oh My OpenCode — Agent Prompts (Adapted for OpenClaw)
 
-Raw system prompts extracted from [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) (dev branch, 2026-03-04).
+System prompts extracted from [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) (dev branch, 2026-03-04), adapted to use OpenClaw's tooling and agent-swarm's GitHub-based state model.
 
-These are the actual prompts that define each agent's behavior. The value proposition of OMO is ~80% prompt engineering, ~20% harness tooling (hash-anchored edits, LSP integration, category→model routing, background agent management).
+## Key Adaptations from OMO → OpenClaw
+
+| OMO Concept | OpenClaw Equivalent |
+|-------------|-------------------|
+| `task(subagent_type=X)` | `sessions_spawn(agentId=X)` |
+| `task(category=X, load_skills=[...])` | `sessions_spawn` with model/task context |
+| `run_in_background=true` | `sessions_spawn(mode="run")` — push-based, auto-announces completion |
+| `background_output(task_id)` | Sub-agent auto-announces; use `sessions_history` if needed |
+| `session_id` for resume | `sessions_send(sessionKey, message)` to existing session |
+| `.sisyphus/plans/*.md` | GitHub issues with labels (`plan:draft`, `ready-for-build`, etc.) |
+| `.sisyphus/notepads/` | GitHub issue comments (structured, searchable) |
+| `todowrite` / `TaskCreate` | GitHub issue checkboxes or agent comments |
+| `lsp_diagnostics` | `exec` running project's lint/typecheck commands |
+| `Question` tool | Telegram inline buttons via `message(action=send, buttons=[...])` |
+| `call_omo_agent` | `sessions_spawn` or `sessions_send` |
+| OpenCode hooks | OpenClaw cron jobs + find-work.sh pre-checks |
 
 ## Agent Roster
 
-| Agent | Role | File | Read-Only? | Cost |
-|-------|------|------|-----------|------|
-| **Sisyphus** | Main orchestrator | [sisyphus.md](sisyphus.md) | No | EXPENSIVE |
-| **Hephaestus** | Autonomous deep worker (GPT-native) | [hephaestus.md](hephaestus.md) | No | EXPENSIVE |
-| **Prometheus** | Strategic planner (interview → plan) | [prometheus.md](prometheus.md) | Write .md only | EXPENSIVE |
-| **Atlas** | Plan executor/conductor | [atlas.md](atlas.md) | Reads + runs cmds | EXPENSIVE |
-| **Oracle** | Architecture consultant | [oracle.md](oracle.md) | Read-only | EXPENSIVE |
-| **Metis** | Pre-planning gap analyzer | [metis.md](metis.md) | Read-only | EXPENSIVE |
-| **Momus** | Plan reviewer (approval-biased) | [momus.md](momus.md) | Read-only | EXPENSIVE |
-| **Explore** | Codebase grep specialist | [explore.md](explore.md) | Read-only | FREE |
-| **Librarian** | External docs/OSS search | [librarian.md](librarian.md) | Read-only | CHEAP |
-| **Multimodal Looker** | Vision/PDF analysis | [multimodal-looker.md](multimodal-looker.md) | Read-only | CHEAP |
+| Agent | Role | File | Relevance to agent-swarm |
+|-------|------|------|------------------------|
+| **Sisyphus** | Main orchestrator | [sisyphus.md](sisyphus.md) | Patterns for BUILD agent |
+| **Hephaestus** | Autonomous deep worker | [hephaestus.md](hephaestus.md) | Patterns for BUILD agent |
+| **Prometheus** | Strategic planner | [prometheus.md](prometheus.md) | Patterns for PLAN/Blueprint agent |
+| **Atlas** | Plan executor/conductor | [atlas.md](atlas.md) | Patterns for BUILD agent orchestration |
+| **Oracle** | Architecture consultant | [oracle.md](oracle.md) | Reusable as sub-agent for any agent |
+| **Metis** | Pre-planning gap analyzer | [metis.md](metis.md) | Sub-agent for PLAN agent |
+| **Momus** | Plan reviewer | [momus.md](momus.md) | Sub-agent for REVIEW agent |
+| **Explore** | Codebase grep | [explore.md](explore.md) | Sub-agent for BUILD/PLAN |
+| **Librarian** | External docs search | [librarian.md](librarian.md) | Sub-agent for BUILD/PLAN |
+| **Multimodal Looker** | Vision/PDF analysis | [multimodal-looker.md](multimodal-looker.md) | Utility sub-agent |
 
 ## Notes
 
-- Sisyphus and Hephaestus prompts are **dynamically assembled** at runtime — sections like tool selection tables, delegation tables, and agent lists are injected based on what's available. The prompts here show the static template with `{PLACEHOLDER}` markers where dynamic content would go.
-- Prometheus is assembled from 6 modular sections (identity, interview, plan-generation, high-accuracy, plan-template, behavioral-summary).
-- Atlas has `{PLACEHOLDER}` markers for category/agent/skill sections injected at runtime.
-- All agents use OpenCode's `task()` function for delegation — this is the harness's subagent spawning mechanism.
+- These are reference prompts, not direct agent configurations. The patterns and prompt techniques
+  should be extracted and incorporated into each agent-swarm agent's AGENTS.md / PROMPT.md.
+- agent-swarm uses GitHub (issues, PRs, labels, comments) as shared state instead of local files.
+- Sub-agents in OpenClaw are push-based (they auto-announce completion) — no polling needed.
