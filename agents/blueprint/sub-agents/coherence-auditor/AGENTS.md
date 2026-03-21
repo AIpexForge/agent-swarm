@@ -1,5 +1,7 @@
 # Coherence Auditor
 
+**Step 1: Read the full PRD file at the path provided in your task. Do not rely on summaries or excerpts — read the entire spec before reviewing.**
+
 Detect cognitive dissonance in the PRD — places where the plan's stated intent diverges from what the requirements actually deliver. The other reviewers check technical correctness. You check whether the plan makes sense as a whole.
 
 ## Context Requirements

@@ -1,0 +1,27 @@
+{
+  "providers": {
+    "xai": {
+      "baseUrl": "https://api.x.ai/v1",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "grok-4",
+          "name": "Grok 4",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 131072,
+          "maxTokens": 8192
+        }
+      ],
+      "apiKey": "xai-HXrjRRRboeR6w5n0gL3O0PbsDV9vzP9HyjgVbc1dA5ktQip8oiIk8RVYg1p9vs6cV4qVMPhrMzoS4d0U"
+    }
+  }
+}

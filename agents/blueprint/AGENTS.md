@@ -179,7 +179,13 @@ Do not skip this step. The user needs a real PR to review, not a wall of text in
 
 ## Phase 5: Validation (Sub-Agent)
 
-Spawn `sessions_spawn(agentId="quality-validator")` with the PRD content as the task. The validator's prompt is pre-loaded from its agent config. Include the PRD and specify whether to use the comprehensive (14 checks) or minimal (6 checks) checklist. See `references/validation-checks.md` for the full checklist.
+Spawn `sessions_spawn(agentId="quality-validator")`. The PRD is already on disk from Phase 4's draft PR. Pass the file path and checklist type — the validator reads the full spec itself:
+
+```
+sessions_spawn(agentId="quality-validator", task="Read the PRD at <repo_path>/specs/FEAT-<name>.md (branch plan/<slug>-draft). Run the comprehensive [or minimal] checklist. Return score, grade, and issues as JSON.")
+```
+
+See `references/validation-checks.md` for the full checklist.
 
 The validator returns score, grade, and issues. If grade < ACCEPTABLE, auto-fix what you can and re-submit (max 1 retry). Remaining issues are flagged to the user.
 
@@ -189,7 +195,18 @@ The validator returns score, grade, and issues. If grade < ACCEPTABLE, auto-fix 
 
 **Skip for trivial/simple requests.**
 
-Spawn 5 review sub-agents in parallel by `agentId`. Each agent's prompt is pre-loaded from its config — pass the PRD content + codebase context as the task string.
+Spawn 5 review sub-agents in parallel by `agentId`. The PRD is on disk from Phase 4 — do NOT paste the spec into the task string. Each reviewer reads it from the file path.
+
+**Task string for each reviewer:**
+```
+Review the PRD at <repo_path>/specs/FEAT-<name>.md (branch plan/<slug>-draft).
+Repo: <repo_path>
+Stack: <stack from .agents/commands.yml>
+Directory structure: <top-2-level listing>
+Key patterns: <from AGENTS.md Key Abstractions & Patterns>
+
+Read the full PRD file before reviewing. Return your verdict as JSON.
+```
 
 | agentId | Focus |
 |---------|-------|
@@ -198,6 +215,8 @@ Spawn 5 review sub-agents in parallel by `agentId`. Each agent's prompt is pre-l
 | `contradiction-detector` | Internal inconsistencies between requirements |
 | `coherence-auditor` | Plan intent vs. what requirements actually deliver |
 | `testability-auditor` | Verifiability, concreteness, e2e coverage |
+
+**IMPORTANT:** Every reviewer must receive the file path, repo path, and codebase context. They read the full spec themselves — never summarize or truncate it.
 
 See `references/reviewers.md` for output contract.
 
@@ -296,9 +315,11 @@ All sub-agents are registered in `openclaw.json` with `parentOnly: true` (only B
 **Spawn pattern:**
 ```
 sessions_spawn(agentId="research", task="<question + context>")
-sessions_spawn(agentId="quality-validator", task="<PRD content + checklist type>")
-sessions_spawn(agentId="architecture-auditor", task="<PRD + codebase context>")
+sessions_spawn(agentId="quality-validator", task="Read PRD at <path>. Run comprehensive checklist.")
+sessions_spawn(agentId="architecture-auditor", task="Review PRD at <path>. Repo: <path>. Stack: <stack>. ...")
 ```
+
+**Key rule:** Reviewers and validator read the PRD from disk via file path. Never paste the full spec into the task string — it wastes tokens and risks truncation.
 
 ---
 

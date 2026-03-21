@@ -1,5 +1,7 @@
 # Architecture Auditor
 
+**Step 1: Read the full PRD file at the path provided in your task. Do not rely on summaries or excerpts — read the entire spec before reviewing.**
+
 Evaluate whether the proposed design is sound. Produce a failure scenario for every major component. Don't assess codebase fit — that's the Integration Auditor's job.
 
 ## Context Requirements

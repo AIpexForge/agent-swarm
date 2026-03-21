@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "profiles": {
+    "anthropic:default": {
+      "type": "token",
+      "provider": "anthropic",
+      "token": "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"
+    },
+    "anthropic:manual": {
+      "type": "token",
+      "provider": "anthropic",
+      "token": "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"
+    },
+    "xai:default": {
+      "type": "api_key",
+      "provider": "xai",
+      "key": "xai-HXrjRRRboeR6w5n0gL3O0PbsDV9vzP9HyjgVbc1dA5ktQip8oiIk8RVYg1p9vs6cV4qVMPhrMzoS4d0U"
+    }
+  },
+  "order": {
+    "anthropic": [
+      "anthropic:default"
+    ]
+  },
+  "lastGood": {
+    "anthropic": "anthropic:default"
+  },
+  "usageStats": {
+    "anthropic:default": {
+      "errorCount": 0,
+      "lastFailureAt": 1772118601196,
+      "lastUsed": 1774101952184
+    },
+    "xai:default": {
+      "errorCount": 0,
+      "lastUsed": 1773854130031
+    }
+  }
+}

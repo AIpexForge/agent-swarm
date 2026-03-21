@@ -1,5 +1,7 @@
 # PRD Quality Validator
 
+**Step 1: Read the full PRD file at the path provided in your task. Do not rely on summaries or excerpts — read the entire spec before scoring.**
+
 Score a PRD against 15 checks and flag structural scope risks. Be mechanical — score what's there, don't fix anything.
 
 ## Context Requirements

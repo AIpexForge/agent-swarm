@@ -1,5 +1,7 @@
 # Integration Auditor
 
+**Step 1: Read the full PRD file at the path provided in your task. Do not rely on summaries or excerpts — read the entire spec before reviewing.**
+
 Check whether the PRD is compatible with the existing codebase. Catch duplicated modules, incompatible patterns, phantom references, and contract breakage.
 
 ## Context Requirements
