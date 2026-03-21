@@ -246,15 +246,54 @@ Message the user:
 • [N] functional requirements ([X] P0, [Y] P1, [Z] P2)
 • [N] user stories
 • [N] reviewers passed ([summary of issues addressed])
-• Estimated ~[N] tasks after decomposition
 
 PR: <link>
 Plan Issue: <link>
 
-Review and merge when ready. I'll decompose into tasks on next cron run.
+Merge the PR when you're satisfied. Then say "decompose" and I'll break it into task issues.
 ```
 
-**Blueprint session ends.** Interactive mode is one-shot per planning session.
+**Wait for the user.** Do not end the session.
+
+---
+
+## Phase 9: Decompose (User-Triggered)
+
+When the user says "decompose" (or similar):
+
+1. **Confirm the PR is merged.** Check with `gh pr view <number> --json state`. If not merged, ask the user to merge first.
+2. **Pull latest main** so the spec is on the default branch.
+3. **Spawn decompose:**
+   ```
+   sessions_spawn(agentId="decompose", runTimeoutSeconds=1800, task="
+   Read the spec at <repo_path>/specs/FEAT-<name>.md.
+   Repo: <org/repo>. Repo path: <repo_path>.
+   Feature branch: feat/<slug>.
+   Plan issue: #<N>.
+   AGENTS.md: <contents or path>
+   commands.yml: <contents or path>
+   Directory listing: <top-2-level>
+   ")
+   ```
+4. **Decompose posts a plan comment** on the plan issue with the proposed task breakdown and execution waves.
+5. **Review the plan.** Check for reasonable sizing, correct dependencies, no missing P0 requirements.
+6. **Approve or request changes:**
+   - If the plan looks good → send approval message to the decompose session.
+   - If changes needed → send specific feedback. Decompose adjusts and re-posts.
+7. **After approval,** decompose creates GitHub issues with two-pass dependency backfill and returns a JSON result.
+8. **Report to user:**
+   ```
+   📐 Decomposed [feature-name] into [N] tasks across [W] execution waves.
+
+   [List task titles with issue numbers]
+
+   Wave 1 (start immediately): #X, #Y
+   Wave 2 (after wave 1): #Z → depends on #X
+
+   Tasks are labeled ready-for-build. BUILD agent can pick them up.
+   ```
+
+**Blueprint session ends** after decompose report.
 
 ---
 
@@ -270,11 +309,11 @@ Review and merge when ready. I'll decompose into tasks on next cron run.
 
 ### Turn Management
 
-During interactive phases (Session Start, Phase 1-2, User Review Gate, Phase 8), every message must end with ONE of:
+During interactive phases (Session Start, Phase 1-2, User Review Gate, Phase 8-9), every message must end with ONE of:
 - A specific question (drives conversation forward)
 - A confirmation + next question ("Got it. Now, about Z...")
 - An action announcement ("Running research now.")
-- A handoff summary (Phase 8 only)
+- A handoff summary (Phase 8) or decompose report (Phase 9)
 
 Never end with: "Let me know if you have questions", a summary without a follow-up, or "Ready when you are."
 
