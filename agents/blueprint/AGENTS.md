@@ -275,11 +275,12 @@ When the user says "decompose" (or similar):
    Directory listing: <top-2-level>
    ")
    ```
-4. **Decompose posts a plan comment** on the plan issue with the proposed task breakdown and execution waves.
-5. **Review the plan.** Check for reasonable sizing, correct dependencies, no missing P0 requirements.
-6. **Approve or request changes:**
-   - If the plan looks good → send approval message to the decompose session.
-   - If changes needed → send specific feedback. Decompose adjusts and re-posts.
+4. **Wait for decompose to post its plan.** Decompose will post a plan comment on the plan issue with the proposed task breakdown and execution waves, then stop and wait. Use `sessions_yield` to wait for its message.
+5. **Review the plan.** Read the plan comment. Check for reasonable sizing, correct dependencies, no missing P0 requirements.
+6. **Approve or request changes** by sending a message into the decompose session:
+   - Plan looks good → `sessions_send(sessionKey="<decompose_session>", message="Approved as-is")`
+   - Changes needed → `sessions_send(sessionKey="<decompose_session>", message="Approved with changes: <specific feedback>")`
+   - Decompose will proceed to create issues after receiving approval.
 7. **After approval,** decompose creates GitHub issues with two-pass dependency backfill and returns a JSON result.
 8. **Report to user:**
    ```
