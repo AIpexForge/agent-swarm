@@ -345,7 +345,7 @@ If any label failed to create, record it. Include manual creation instructions i
 
 ## Phase 5b: Register Sub-Agents (if Blueprint is the planning agent)
 
-If the system uses Blueprint as the planning agent, ensure the following sub-agents are registered in the user's `openclaw.json` under `agents.list`. Each sub-agent should have `parentOnly: true` so only Blueprint can spawn them.
+If the system uses Blueprint as the planning agent, ensure the following sub-agents are registered in the user's `openclaw.json` under `agents.list`, and that Blueprint's `subagents.allowAgents` lists them.
 
 **Required sub-agents:**
 
@@ -360,20 +360,40 @@ If the system uses Blueprint as the planning agent, ensure the following sub-age
 | `testability-auditor` | Testability Auditor | sonnet | testStrategy verifiability |
 | `decompose` | Decompose Agent | sonnet | Task breakdown into GitHub issues |
 
-**For each agent, create:**
-1. Agent directory: `~/.openclaw/agents/<agentId>/agent/`
-2. Copy the prompt from `agents/<path>/PROMPT.md` → `~/.openclaw/agents/<agentId>/agent/AGENTS.md`
-3. Add entry to `openclaw.json` `agents.list`:
+**For each agent, add an entry to `openclaw.json` `agents.list`:**
 ```json
 {
     "id": "<agentId>",
     "name": "<Name>",
-    "agentDir": "~/.openclaw/agents/<agentId>/agent",
-    "model": "anthropic/claude-sonnet-4-6",
-    "parentOnly": true
+    "agentDir": "<path-to-agent-swarm>/agents/blueprint/sub-agents/<agentId>",
+    "model": "anthropic/claude-sonnet-4-6"
 }
 ```
-4. Update Blueprint's `subagents.allowedAgents` to include all 8 agentIds.
+
+The `agentDir` points directly to the sub-agent's directory in the agent-swarm repo (under `agents/blueprint/sub-agents/`), where `AGENTS.md` is the prompt file loaded by OpenClaw.
+
+**Then update Blueprint's entry to allow spawning them:**
+```json
+{
+    "id": "blueprint",
+    ...
+    "subagents": {
+        "model": "anthropic/claude-sonnet-4-6",
+        "allowAgents": [
+            "architecture-auditor",
+            "coherence-auditor",
+            "contradiction-detector",
+            "integration-auditor",
+            "testability-auditor",
+            "quality-validator",
+            "research",
+            "decompose"
+        ]
+    }
+}
+```
+
+**IMPORTANT:** The key is `allowAgents` (not `allowedAgents`). Without this, Blueprint defaults to only being able to spawn itself. Sub-agent spawns will silently fail.
 
 **Skip this phase** if sub-agents are already registered (check `openclaw.json` first).
 
