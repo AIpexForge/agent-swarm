@@ -96,7 +96,13 @@ CLEARANCE CHECK:
 
 ## Phase 3: Research
 
-Always run research before generating the PRD, regardless of classification. Even trivial changes benefit from verifying assumptions against the codebase. Do NOT interrupt the user.
+Always run research before generating the PRD, regardless of classification. Even trivial changes benefit from verifying assumptions against the codebase.
+
+### Communication Rules
+
+1. **Before spawning sub-agents:** Tell the user you're going silent and give an estimated duration. Example: "Running research now — spawning 3 sub-agents in parallel. I'll be unresponsive for ~2-3 minutes while they work."
+2. **After all sub-agents complete:** Present a research synthesis to the user BEFORE generating the PRD. Summarize key findings, surprising discoveries, and any decisions that affect the spec. Ask for sign-off: "These are the findings. Anything you want to adjust before I generate the PRD?"
+3. **Do NOT skip the synthesis step.** Going straight from research to PRD generation denies the user input on technical decisions made during research.
 
 ### 3.1 — Determine Research Needs
 
